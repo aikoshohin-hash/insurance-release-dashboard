@@ -297,6 +297,39 @@ tbody td { padding: 11px 14px; vertical-align: top; }
 .hbar-fill { height: 100%; border-radius: 4px; }
 .hbar-val { font-weight: 600; color: var(--text); }
 
+/* === 新着ハイライト === */
+.row-new {
+  background: linear-gradient(90deg, #fff8e1 0%, #fffdf5 100%) !important;
+  border-left: 3px solid #ffa62b;
+}
+.row-new:hover { background: #fff3cd !important; }
+.badge-new {
+  display: inline-block;
+  background: #ff4b4b;
+  color: white;
+  font-size: 0.6rem;
+  font-weight: 700;
+  padding: 1px 6px;
+  border-radius: 3px;
+  margin-left: 6px;
+  letter-spacing: 0.5px;
+  vertical-align: middle;
+  animation: pulse 2s ease-in-out infinite;
+}
+@keyframes pulse {
+  0%,100% { opacity: 1; }
+  50% { opacity: 0.6; }
+}
+.new-divider {
+  padding: 8px 18px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: var(--rank-a);
+  background: #fff8e1;
+  border-bottom: 1px solid #ffe0b2;
+}
+.metric-new .value { color: #ff4b4b !important; }
+
 /* === 更新ボタン === */
 .refresh-section {
   margin-top: 16px;
@@ -442,6 +475,9 @@ tbody td { padding: 11px 14px; vertical-align: top; }
       <option value="D">D ランク</option>
     </select>
     <select id="fCompany" onchange="refresh()"></select>
+    <label style="display:flex;align-items:center;gap:6px;font-size:0.82rem;margin:6px 0;cursor:pointer">
+      <input type="checkbox" id="fNewOnly" onchange="refresh()" style="accent-color:var(--rank-s)"> 新着のみ表示
+    </label>
 
     <!-- データ更新セクション -->
     <div class="refresh-section">
@@ -481,9 +517,10 @@ tbody td { padding: 11px 14px; vertical-align: top; }
         <div class="label">平均スコア</div>
         <div class="value" id="m-avg">0</div>
       </div>
-      <div class="metric">
-        <div class="label">取得会社数</div>
-        <div class="value" id="m-companies">0</div>
+      <div class="metric metric-new">
+        <div class="label">新着 (3日以内)</div>
+        <div class="value" id="m-new">0</div>
+        <div class="sub" id="m-new-sub"></div>
       </div>
     </div>
 
@@ -502,6 +539,28 @@ tbody td { padding: 11px 14px; vertical-align: top; }
 var DATA = /*DATA_JSON*/[];
 var currentPage = 'ranking';
 var GH_CONFIG = /*GH_CONFIG_JSON*/{"owner":"","repo":"","enabled":false};
+var NEW_DAYS = 3; // 新着とみなす日数
+
+// 日付パース
+function parseDate(s){
+  if(!s) return null;
+  var m = s.match(/(\d{4})\D+(\d{1,2})\D+(\d{1,2})/);
+  if(m) return new Date(parseInt(m[1]),parseInt(m[2])-1,parseInt(m[3]));
+  return null;
+}
+
+// 新着判定
+function isNew(e){
+  var d = parseDate(e.date);
+  if(!d) return false;
+  var now = new Date();
+  now.setHours(0,0,0,0);
+  var diff = (now - d) / (1000*60*60*24);
+  return diff <= NEW_DAYS;
+}
+
+// DATA各エントリに _isNew フラグを付与
+DATA.forEach(function(e){ e._isNew = isNew(e); });
 
 // 初期化
 (function init(){
@@ -523,8 +582,10 @@ function updateMetrics(){
   document.getElementById('m-srank').textContent = s;
   var sum=0; DATA.forEach(function(e){ sum+=e.score||0; });
   document.getElementById('m-avg').textContent = DATA.length? (sum/DATA.length).toFixed(1) : '0';
-  var co={}; DATA.forEach(function(e){ co[e.company]=1; });
-  document.getElementById('m-companies').textContent = Object.keys(co).length;
+  // 新着カウント
+  var nw=0; DATA.forEach(function(e){ if(e._isNew) nw++; });
+  document.getElementById('m-new').textContent = nw;
+  document.getElementById('m-new-sub').textContent = nw>0 ? 'NEW!' : '-';
   document.getElementById('nc-all').textContent = DATA.length;
   ['A','B','C'].forEach(function(c){
     var n=0; DATA.forEach(function(e){ if(e.cat_key===c) n++; });
@@ -536,16 +597,24 @@ function getFiltered(catKey){
   var q = document.getElementById('search').value.toLowerCase();
   var r = document.getElementById('fRank').value;
   var c = document.getElementById('fCompany').value;
-  return DATA.filter(function(e){
+  var nOnly = document.getElementById('fNewOnly').checked;
+  var result = DATA.filter(function(e){
     if(catKey && e.cat_key !== catKey) return false;
     if(r && e.rank_label !== r) return false;
     if(c && e.company !== c) return false;
+    if(nOnly && !e._isNew) return false;
     if(q){
       var t = (e.title||'')+(e.company||'')+(e.commentary||'')+(e.product_type||'');
       if(t.toLowerCase().indexOf(q)===-1) return false;
     }
     return true;
   });
+  // 新着を上に、その中でスコア降順
+  result.sort(function(a,b){
+    if(a._isNew !== b._isNew) return a._isNew ? -1 : 1;
+    return (b.score||0) - (a.score||0);
+  });
+  return result;
 }
 
 function esc(s){ var d=document.createElement('div'); d.textContent=s||''; return d.innerHTML; }
@@ -554,25 +623,34 @@ function rc(r){ return {S:'var(--rank-s)',A:'var(--rank-a)',B:'var(--rank-b)',C:
 
 function buildTable(entries, title){
   if(!entries.length) return '<div class="table-wrap"><div class="section-title">'+esc(title)+'</div><div style="padding:40px;text-align:center;color:var(--text-light)">該当データなし</div></div>';
-  var h = '<div class="table-wrap"><div class="section-title">'+esc(title)+' ('+entries.length+'件)</div>';
+  var newCount = entries.filter(function(e){return e._isNew;}).length;
+  var titleSuffix = newCount>0 ? ' ('+entries.length+'件 / 新着'+newCount+'件)' : ' ('+entries.length+'件)';
+  var h = '<div class="table-wrap"><div class="section-title">'+esc(title)+titleSuffix+'</div>';
   h += '<div style="overflow-x:auto"><table><thead><tr>';
   h += '<th>ランク</th><th>スコア</th><th>人気度</th><th>会社名</th><th>日付</th><th>見出し</th>';
   h += '</tr></thead><tbody>';
+  var shownDivider = false;
   entries.forEach(function(e,i){
+    // 新着と既存の区切り線
+    if(!shownDivider && !e._isNew && newCount>0){
+      h += '<tr><td colspan="6" class="new-divider">&#9660; 以前のニュース</td></tr>';
+      shownDivider = true;
+    }
     var id = currentPage+'_'+i;
     var url = e.url||'';
     var tHtml = url ? '<a href="'+url+'" target="_blank" rel="noopener">'+esc(e.title)+'</a>' : esc(e.title);
+    var newBadge = e._isNew ? '<span class="badge-new">NEW</span>' : '';
     var tags = '';
     if(e.product_type) tags += '<span class="tag">'+esc(e.product_type)+'</span>';
     if(e.action_type) tags += '<span class="tag">'+esc(e.action_type)+'</span>';
     if(e.cat_label) tags += '<span class="tag">'+esc(e.cat_label)+'</span>';
-    h += '<tr onclick="toggle(\''+id+'\')">';
+    h += '<tr onclick="toggle(\''+id+'\')" class="'+(e._isNew?'row-new':'')+'">';
     h += '<td class="rank-cell rank-'+e.rank_label+'">'+e.rank_label+'</td>';
     h += '<td class="score-cell">'+e.score+'</td>';
     h += '<td class="stars-cell">'+stars(e.popularity||1)+'</td>';
     h += '<td class="company-cell">'+esc(e.company)+'</td>';
     h += '<td class="date-cell">'+esc(e.date)+'</td>';
-    h += '<td class="title-cell">'+tHtml+(tags?' <br>'+tags:'')+'</td>';
+    h += '<td class="title-cell">'+tHtml+newBadge+(tags?' <br>'+tags:'')+'</td>';
     h += '</tr>';
     // detail row
     var d = e.score_detail||{};
