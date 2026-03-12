@@ -1,0 +1,110 @@
+# 保険リリース自動取得 & GitHub Pages デプロイ
+#
+# トリガー:
+#   1. 毎日 9:00 JST (0:00 UTC) に自動実行
+#   2. GitHub UI / API からの手動トリガー (workflow_dispatch)
+#   3. main ブランチへの push
+#
+# 動作:
+#   1. Python 環境セットアップ
+#   2. main.py でデータ取得 → HTMLレポート生成
+#   3. GitHub Pages にデプロイ (gh-pages ブランチ)
+
+name: Fetch & Deploy Report
+
+on:
+  schedule:
+    # 毎日 0:00 UTC = 9:00 JST
+    - cron: '0 0 * * *'
+  workflow_dispatch:
+    # GitHub UI/API から手動トリガー可能
+    inputs:
+      company:
+        description: '取得対象会社 (空欄=全社)'
+        required: false
+        default: ''
+  push:
+    branches: [ main ]
+    paths:
+      - '**.py'
+      - 'requirements.txt'
+
+# GitHub Pages デプロイ用の権限
+permissions:
+  contents: write
+  pages: write
+  id-token: write
+
+jobs:
+  fetch-and-deploy:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+          cache: 'pip'
+
+      - name: Install dependencies
+        run: |
+          pip install --upgrade pip
+          pip install -r requirements.txt
+
+      - name: Fetch releases and generate report
+        env:
+          PYTHONIOENCODING: utf-8
+        run: |
+          # 手動トリガー時に会社指定がある場合
+          COMPANY_ARG=""
+          if [ -n "${{ github.event.inputs.company }}" ]; then
+            COMPANY_ARG="--company ${{ github.event.inputs.company }}"
+          fi
+
+          # データ取得 & HTMLレポート生成 (Google Sheets はスキップ)
+          python main.py --no-gsheet $COMPANY_ARG
+
+      - name: Prepare deploy directory
+        run: |
+          mkdir -p deploy
+
+          # 最新のHTMLレポートをコピー
+          LATEST_REPORT=$(ls -t output/report_*.html 2>/dev/null | head -1)
+          if [ -n "$LATEST_REPORT" ]; then
+            cp "$LATEST_REPORT" deploy/index.html
+            echo "Deployed: $LATEST_REPORT"
+          else
+            echo "No HTML report found!"
+            exit 1
+          fi
+
+          # Excelも保存 (ダウンロード用)
+          LATEST_EXCEL=$(ls -t output/releases_*.xlsx 2>/dev/null | head -1)
+          if [ -n "$LATEST_EXCEL" ]; then
+            cp "$LATEST_EXCEL" deploy/latest.xlsx
+          fi
+
+          # .nojekyll (GitHub Pages の Jekyll ビルドを無効化)
+          touch deploy/.nojekyll
+
+          echo "Deploy directory contents:"
+          ls -la deploy/
+
+      - name: Deploy to GitHub Pages
+        uses: peaceiris/actions-gh-pages@v4
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          publish_dir: ./deploy
+          force_orphan: true
+          commit_message: "Update report - $(date '+%Y/%m/%d %H:%M JST')"
+
+      - name: Upload artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: reports-${{ github.run_number }}
+          path: output/
+          retention-days: 30

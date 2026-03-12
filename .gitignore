@@ -1,0 +1,13 @@
+__pycache__/
+*.pyc
+.env
+credentials.json
+output/
+*.xlsx
+*.zip
+cache_dashboard.json
+.deploy_info.json
+.streamlit/
+deploy/
+report_*.html
+nul
