@@ -28,22 +28,24 @@ class TDFinancialScraper(BaseScraper):
 
     def _parse_page(self, soup, category: str) -> list[dict]:
         entries = []
-        news_list = soup.select_one("ul.list-info-01")
-        if not news_list:
-            return entries
 
-        for li in news_list.find_all("li", recursive=False):
-            date_el = li.select_one("span.date dt") or li.select_one("span.date")
-            if not date_el:
+        # span.date ごとに日付を取得し、同じ親要素内の dd > a をリンクとして抽出
+        # HTML構造: <li> <span class="date"><dt>日付</dt></span> <dd><ul><li class="link-container"><a>...</a></li></ul></dd> </li>
+        for date_span in soup.select("span.date"):
+            dt = date_span.select_one("dt")
+            date_str = dt.get_text(strip=True) if dt else date_span.get_text(strip=True)
+
+            # 親要素の dd からリンクを取得
+            parent = date_span.parent
+            if not parent:
                 continue
-            date_str = date_el.get_text(strip=True)
+            dd = parent.find("dd")
+            if not dd:
+                continue
 
-            for link_li in li.select("li.link-container"):
-                a_tag = link_li.select_one("a")
-                if not a_tag:
-                    continue
+            for a_tag in dd.select("a"):
                 raw_title = a_tag.get_text(strip=True)
-                title = re.sub(r"\s*\(\d+KB\)\s*$", "", raw_title)
+                title = re.sub(r"\s*[\(（]\d+KB[\)）]\s*$", "", raw_title)
                 href = a_tag.get("href", "")
                 if not href.startswith("http"):
                     href = f"https://www.tdf-life.co.jp/newsrelease/{href}"

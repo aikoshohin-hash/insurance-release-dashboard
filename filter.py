@@ -32,7 +32,7 @@ def is_in_date_range(
     """日付が抽出対象期間内かどうか判定"""
     d = parse_date(date_str)
     if d is None:
-        return True  # 日付不明の場合は含める（手動確認用）
+        return False  # 日付不明のエントリは除外（誤表示防止）
     return date_from <= d <= date_to
 
 
