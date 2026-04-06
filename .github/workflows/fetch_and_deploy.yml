@@ -91,6 +91,12 @@ jobs:
           # .nojekyll (GitHub Pages の Jekyll ビルドを無効化)
           touch deploy/.nojekyll
 
+          # robots.txt (検索エンジンのクロール・インデックスを拒否)
+          cat > deploy/robots.txt << 'ROBOTS'
+          User-agent: *
+          Disallow: /
+          ROBOTS
+
           echo "Deploy directory contents:"
           ls -la deploy/
 
