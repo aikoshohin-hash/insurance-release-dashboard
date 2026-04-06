@@ -1,7 +1,12 @@
-"""保険会社リリース取得ツール v2 - 設定"""
+"""保険会社リリース取得ツール v3 - 設定
+
+会社の追加・変更は companies.py で行ってください。
+"""
 
 import os
 from datetime import datetime, date
+
+from companies import get_companies_dict, get_company_count
 
 # ── ディレクトリ ──
 PROJECT_DIR = os.path.dirname(__file__)
@@ -56,108 +61,6 @@ CATEGORY_LABELS = {
     "C": "プレスリリース",
 }
 
-# ── 対象会社（13社） ──
-COMPANIES = {
-    "sumitomo": {
-        "name": "住友生命",
-        "base_url": "https://www.sumitomolife.co.jp",
-        "pages": {
-            "A": ["https://www.sumitomolife.co.jp/infolist/"],
-            "B": ["https://www.sumitomolife.co.jp/about/newsrelease/2025.html"],
-        },
-    },
-    "nissay": {
-        "name": "日本生命",
-        "base_url": "https://www.nissay.co.jp",
-        "pages": {
-            "A": ["https://www.nissay.co.jp/kaisha/topics/"],
-            "B": ["https://www.nissay.co.jp/kaisha/news/"],
-        },
-    },
-    "nissay-wealth": {
-        "name": "ニッセイ・ウェルス生命",
-        "base_url": "https://www.nw-life.co.jp",
-        "pages": {
-            "A": ["https://www.nw-life.co.jp/news/info/"],
-            "B": ["https://www.nw-life.co.jp/news/release/"],
-        },
-    },
-    "taiju": {
-        "name": "大樹生命",
-        "base_url": "https://www.taiju-life.co.jp",
-        "pages": {
-            "B": ["https://www.taiju-life.co.jp/corporate/news/"],
-        },
-    },
-    "meiji-yasuda": {
-        "name": "明治安田生命",
-        "base_url": "https://www.meijiyasuda.co.jp",
-        "pages": {
-            "A": ["https://www.meijiyasuda.co.jp/profile/news/topics/"],
-            "B": ["https://www.meijiyasuda.co.jp/profile/news/release/2025/"],
-        },
-    },
-    "ms-primary": {
-        "name": "三井住友海上プライマリー生命",
-        "base_url": "https://www.ms-primary.com",
-        "pages": {
-            "A": ["https://www.ms-primary.com/news/info/2025/"],
-            "B": ["https://www.ms-primary.com/news/ir/2025/"],
-        },
-    },
-    "metlife": {
-        "name": "メットライフ生命",
-        "base_url": "https://www.metlife.co.jp",
-        "pages": {
-            "A": ["https://www.metlife.co.jp/about/info/"],
-            "C": ["https://www.metlife.co.jp/about/press/"],
-        },
-    },
-    "taiyo": {
-        "name": "太陽生命",
-        "base_url": "https://www.taiyo-seimei.co.jp",
-        "pages": {
-            "A": ["https://www.taiyo-seimei.co.jp/wr2/json/news.json"],
-            "B": ["https://www.taiyo-seimei.co.jp/wr2/json/release.json"],
-        },
-    },
-    "pgf": {
-        "name": "PGF生命",
-        "base_url": "https://www.pgf-life.co.jp",
-        "pages": {
-            "A": ["https://www.pgf-life.co.jp/is/news/NB100.do?TYPE=2"],
-            "B": ["https://www.pgf-life.co.jp/is/news/NB100.do?TYPE=1"],
-        },
-    },
-    "sonylife": {
-        "name": "ソニー生命",
-        "base_url": "https://www.sonylife.co.jp",
-        "pages": {
-            "A": ["https://www.sonylife.co.jp/info/"],
-            "B": ["https://www.sonylife.co.jp/company/news/2025/"],
-        },
-    },
-    "orix": {
-        "name": "オリックス生命",
-        "base_url": "https://www.orixlife.co.jp",
-        "pages": {
-            "A": ["https://www.orixlife.co.jp/about/notice/"],
-            "B": ["https://www.orixlife.co.jp/about/news/"],
-        },
-    },
-    "td-financial": {
-        "name": "T&Dフィナンシャル生命",
-        "base_url": "https://www.tdf-life.co.jp",
-        "pages": {
-            "B": ["https://www.tdf-life.co.jp/newsrelease/index.php?nendo=2025"],
-        },
-    },
-    "manulife": {
-        "name": "マニュライフ生命",
-        "base_url": "https://www.manulife.co.jp",
-        "pages": {
-            "A": ["https://www.manulife.co.jp/ja/individual/about/news-list.html"],
-            "B": ["https://www.manulife.co.jp/ja/individual/about/newsroom.html"],
-        },
-    },
-}
+# ── 対象会社 ──
+# ※ 会社の追加・変更は companies.py で行ってください
+COMPANIES = get_companies_dict()

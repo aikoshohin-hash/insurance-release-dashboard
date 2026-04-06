@@ -15,6 +15,7 @@ import logging
 from datetime import date, datetime
 
 from config import DATE_FROM
+from companies import get_brand_scores
 
 logger = logging.getLogger(__name__)
 
@@ -64,22 +65,8 @@ CATEGORY_SCORES = {
     "A": 5,   # お知らせ
 }
 
-# 会社ブランド力（業界プレゼンス基準）
-COMPANY_BRAND_SCORES = {
-    "住友生命": 14,
-    "日本生命": 15,
-    "明治安田生命": 14,
-    "メットライフ生命": 13,
-    "ソニー生命": 12,
-    "オリックス生命": 11,
-    "三井住友海上プライマリー生命": 12,
-    "ニッセイ・ウェルス生命": 10,
-    "大樹生命": 9,
-    "太陽生命": 9,
-    "PGF生命": 8,
-    "T&Dフィナンシャル生命": 8,
-    "マニュライフ生命": 11,
-}
+# 会社ブランド力（companies.py から自動取得）
+COMPANY_BRAND_SCORES = get_brand_scores()
 
 
 def _parse_date(date_str: str) -> date | None:
