@@ -39,7 +39,7 @@ COMPANY_LIST = [
         "brand_score":  15,
         "scraper":      "nissay",
         "enabled":      True,
-        "notes":        "JS描画のため一部エントリ取得不可",
+        "notes":        "JS描画サイト。内部JSON API経由で全件取得可能",
     },
     {
         "key":          "sumitomo",
@@ -47,12 +47,12 @@ COMPANY_LIST = [
         "base_url":     "https://www.sumitomolife.co.jp",
         "pages": {
             "A": ["https://www.sumitomolife.co.jp/infolist/"],
-            "B": ["https://www.sumitomolife.co.jp/about/newsrelease/2025.html"],
+            "B": ["https://www.sumitomolife.co.jp/infolist/"],
         },
         "brand_score":  14,
         "scraper":      "sumitomo",
         "enabled":      True,
-        "notes":        "",
+        "notes":        "サイトリニューアルでA/B統合ページ。カテゴリ別にフィルタ",
     },
     {
         "key":          "meiji-yasuda",
@@ -92,8 +92,8 @@ COMPANY_LIST = [
         },
         "brand_score":  11,
         "scraper":      "manulife",
-        "enabled":      True,
-        "notes":        "Akamai WAFによりブロックされる場合あり",
+        "enabled":      False,
+        "notes":        "Akamai WAF 403ブロック。curl/requestsでは取得不可。Playwright等のブラウザ自動化が必要",
     },
 
     # ── 銀行窓販特化 ──
@@ -161,7 +161,7 @@ COMPANY_LIST = [
         "brand_score":  12,
         "scraper":      "sonylife",
         "enabled":      True,
-        "notes":        "SSL handshake failure が発生する場合あり",
+        "notes":        "SSL問題あり。curl フォールバックで取得",
     },
     {
         "key":          "orix",

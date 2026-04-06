@@ -1,4 +1,9 @@
-"""住友生命スクレイパー"""
+"""住友生命スクレイパー v3
+
+サイトリニューアル対応: ニュースリリースとお知らせが
+統合ページ /infolist/ に集約。
+ul.mod-newsList > li 内の <time> + <a> を抽出。
+"""
 
 import re
 import logging
@@ -13,66 +18,72 @@ class SumitomoScraper(BaseScraper):
     company_name = COMPANIES["sumitomo"]["name"]
     base_url = COMPANIES["sumitomo"]["base_url"]
 
+    # 統合ニュースページ（カテゴリA/B共通）
+    NEWS_URL = "https://www.sumitomolife.co.jp/infolist/"
+
+    # サイト側のカテゴリラベル → 当ツールのカテゴリ対応
+    CATEGORY_MAP_B = ["商品・サービス", "企業情報"]
+    CATEGORY_MAP_A = ["トピックス", "イベント・セミナー", "キャンペーン", "サステナビリティ"]
+
     def fetch_releases(self, category: str = "B") -> list[dict]:
         pages = COMPANIES[self.company_key]["pages"]
         if category not in pages:
             return []
 
-        releases = []
-        for url in pages[category]:
-            soup = self._get(url)
-            if category == "A":
-                releases.extend(self._parse_infolist(soup))
-            else:
-                releases.extend(self._parse_newsrelease(soup))
+        soup = self._get(self.NEWS_URL)
+        releases = self._parse_news_list(soup, category)
 
         logger.info(f"[{self.company_name}] カテゴリ{category}: {len(releases)}件")
         return releases
 
-    def _parse_infolist(self, soup) -> list[dict]:
-        """お知らせ一覧ページ (ul.list-topic-01)"""
+    def _parse_news_list(self, soup, category: str) -> list[dict]:
+        """統合ニュースページからエントリ抽出
+
+        HTML構造:
+          <ul class="mod-newsList">
+            <li class="rt_bn_news_list">
+              <time class="__time">2026年04月06日</time>
+              <span>カテゴリ</span>
+              <a href="...">タイトル</a>
+            </li>
+          </ul>
+        """
         entries = []
-        for li in soup.select("ul.list-topic-01 > li"):
+
+        for li in soup.select("ul.mod-newsList > li"):
+            # 日付
+            time_tag = li.select_one("time")
+            if not time_tag:
+                continue
+            date_str = time_tag.get_text(strip=True)
+
+            # サイト側カテゴリ
+            spans = li.select("span")
+            site_cat = ""
+            for span in spans:
+                text = span.get_text(strip=True)
+                if text and text != date_str and len(text) < 20:
+                    site_cat = text
+                    break
+
+            # カテゴリフィルタ
+            if category == "B" and site_cat not in self.CATEGORY_MAP_B:
+                continue
+            if category == "A" and site_cat not in self.CATEGORY_MAP_A:
+                continue
+
+            # タイトルとURL
             a_tag = li.select_one("a")
             if not a_tag:
                 continue
-            text = a_tag.get_text(strip=True)
-            # 日付抽出: "2026年2月9日　..." 形式
-            m = re.match(r"(\d{4}年\d{1,2}月\d{1,2}日)\s*(.*)", text)
-            if m:
-                date_str, title = m.group(1), m.group(2)
-            else:
-                date_str, title = "", text
-            href = self._absolute_url(a_tag.get("href", ""))
-            entries.append(self._make_entry(date_str, title, href, "A"))
-        return entries
-
-    def _parse_newsrelease(self, soup) -> list[dict]:
-        """ニュースリリース年度ページ: <li><em>日付</em><a>タイトル</a></li>"""
-        entries = []
-        # パターン1: <em>日付</em> + <a>タイトル</a>
-        for li in soup.select("ul li"):
-            em_tag = li.select_one("em")
-            a_tag = li.select_one("a")
-            if not em_tag or not a_tag:
-                continue
-            date_text = em_tag.get_text(strip=True)
-            # 日付っぽいかチェック
-            if not re.search(r"\d{4}年", date_text):
-                continue
             title = a_tag.get_text(strip=True)
-            href = self._absolute_url(a_tag.get("href", ""))
-            entries.append(self._make_entry(date_text, title, href, "B"))
+            # 日付部分がタイトルに含まれていたら除去
+            title = re.sub(r"^\d{4}年\d{1,2}月\d{1,2}日\s*", "", title)
+            # PDFサイズ表記除去
+            title = re.sub(r"\s*[\(（]\d+\)$", "", title)
 
-        # パターン2: フォールバック (span.date + a)
-        if not entries:
-            for li in soup.select("ul.c-nav-news-01 > li, ul.list-news-01 > li"):
-                date_el = li.select_one("span.c-nav-news-contents-data, span.data, .date")
-                a_tag = li.select_one("a")
-                if not a_tag:
-                    continue
-                date_str = date_el.get_text(strip=True) if date_el else ""
-                title = a_tag.get_text(strip=True)
-                href = self._absolute_url(a_tag.get("href", ""))
-                entries.append(self._make_entry(date_str, title, href, "B"))
+            href = self._absolute_url(a_tag.get("href", ""))
+
+            entries.append(self._make_entry(date_str, title, href, category))
+
         return entries

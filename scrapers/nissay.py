@@ -1,7 +1,13 @@
-"""日本生命スクレイパー（JS描画対応：APIエンドポイント直接アクセス）"""
+"""日本生命スクレイパー v3 - JSON API 直接アクセス
 
-import json
+日本生命はJS描画サイトのため、HTML解析では取得不可。
+サイト内部の JSON API エンドポイントを直接取得:
+  - /kaisha/news/json/index.json   → ニュースリリース (862件)
+  - /kaisha/topics/json/index.json → お知らせ (134件)
+"""
+
 import re
+import time
 import logging
 from .base import BaseScraper
 from config import COMPANIES
@@ -14,96 +20,77 @@ class NissayScraper(BaseScraper):
     company_name = COMPANIES["nissay"]["name"]
     base_url = COMPANIES["nissay"]["base_url"]
 
-    # 日本生命はJS描画のため、まずHTML内のJSON / APIを探す
-    # フォールバック: HTMLから取得可能なリンクを収集
+    # JSON APIエンドポイント（サイト内部JS releaseOutput.js より特定）
+    JSON_APIS = {
+        "A": "https://www.nissay.co.jp/kaisha/topics/json/index.json",
+        "B": "https://www.nissay.co.jp/kaisha/news/json/index.json",
+    }
 
     def fetch_releases(self, category: str = "B") -> list[dict]:
-        pages = COMPANIES[self.company_key]["pages"]
-        if category not in pages:
+        if category not in self.JSON_APIS:
             return []
 
-        releases = []
-        for url in pages[category]:
-            # まず通常のHTTPリクエストで試行
-            soup = self._get(url)
+        api_url = self.JSON_APIS[category]
+        entries = self._fetch_json_api(api_url, category)
 
-            # JS template内のデータを解析
-            entries = self._parse_static(soup, category)
-            if entries:
-                releases.extend(entries)
-            else:
-                # JS描画で空の場合、JSON APIを探索
-                entries = self._try_json_api(category)
-                releases.extend(entries)
-
-        logger.info(f"[{self.company_name}] カテゴリ{category}: {len(releases)}件")
-        return releases
-
-    def _parse_static(self, soup, category: str) -> list[dict]:
-        """静的HTML部分からエントリを抽出（フォールバック）"""
-        entries = []
-        for li in soup.select("li.m-link-list-release__item"):
-            a_tag = li.select_one("a.m-link-list-release__link")
-            if not a_tag:
-                continue
-            time_tag = li.select_one("time.m-link-list-release__date")
-            date_str = time_tag.get("datetime", "") if time_tag else ""
-            title_span = li.select_one("span.m-link-list-release__text")
-            title = title_span.get_text(strip=True) if title_span else a_tag.get_text(strip=True)
-            href = self._absolute_url(a_tag.get("href", ""))
-            entries.append(self._make_entry(date_str, title, href, category))
+        logger.info(f"[{self.company_name}] カテゴリ{category}: {len(entries)}件")
         return entries
 
-    def _try_json_api(self, category: str) -> list[dict]:
-        """JSON APIエンドポイントを試行"""
+    def _fetch_json_api(self, api_url: str, category: str) -> list[dict]:
+        """JSON API からリリース一覧を取得
+
+        JSON構造:
+          [
+            {
+              "date": "2026-04-01",
+              "title": "タイトル",
+              "category": "商品・サービス",
+              "link": "/kaisha/news/20260401.html",
+              "category_weight": 1
+            },
+            ...
+          ]
+        """
         entries = []
-        # 一般的なAPIパターンを試行
-        api_urls = [
-            f"https://www.nissay.co.jp/kaisha/{'news' if category == 'B' else 'topics'}/json/list.json",
-            f"https://www.nissay.co.jp/api/{'news' if category == 'B' else 'topics'}/",
-        ]
-        for api_url in api_urls:
-            try:
-                import time
-                elapsed = time.time() - self._last_request_time
-                if elapsed < 1.0:
-                    time.sleep(1.0 - elapsed)
-                resp = self.session.get(api_url, timeout=10)
-                self._last_request_time = time.time()
-                if resp.status_code == 200:
-                    data = resp.json()
-                    if isinstance(data, list):
-                        for item in data:
-                            date_str = item.get("date", "")
-                            title = item.get("title", "")
-                            href = item.get("url", item.get("link", ""))
-                            if href:
-                                href = self._absolute_url(href)
-                            entries.append(self._make_entry(date_str, title, href, category))
-                    break
-            except Exception:
+
+        elapsed = time.time() - self._last_request_time
+        if elapsed < 1.0:
+            time.sleep(1.0 - elapsed)
+
+        logger.info(f"[{self.company_name}] GET {api_url}")
+        try:
+            resp = self.session.get(api_url, timeout=15)
+            resp.raise_for_status()
+            self._last_request_time = time.time()
+
+            # サロゲートペア対策（日本生命JSONにはサロゲート文字が含まれる場合あり）
+            text = resp.content.decode("utf-8", errors="replace")
+            import json
+            data = json.loads(text)
+
+        except Exception as e:
+            logger.warning(f"[{self.company_name}] JSON取得失敗: {e}")
+            return entries
+
+        if not isinstance(data, list):
+            logger.warning(f"[{self.company_name}] JSON形式不正: {type(data)}")
+            return entries
+
+        for item in data:
+            date_str = item.get("date", "")
+            title = item.get("title", "")
+            link = item.get("link", "")
+
+            if not title:
                 continue
 
-        # APIが見つからない場合、ホームページのニュースセクションから取得
-        if not entries:
-            entries = self._parse_homepage(category)
+            # 相対パスを絶対URLに変換
+            if link and not link.startswith("http"):
+                link = self._absolute_url(link)
 
-        return entries
+            # サイズ表記除去: [198KB] 等
+            title = re.sub(r"\s*[\[【]\d+KB[\]】]\s*$", "", title)
 
-    def _parse_homepage(self, category: str) -> list[dict]:
-        """ホームページのニュースセクションから取得"""
-        entries = []
-        soup = self._get("https://www.nissay.co.jp/")
-        # ホームページのニュースリスト
-        for li in soup.select("ul.m-link-list-release li, ul.p-top-news__list li"):
-            a_tag = li.select_one("a")
-            if not a_tag:
-                continue
-            time_tag = li.select_one("time")
-            date_str = time_tag.get("datetime", time_tag.get_text(strip=True)) if time_tag else ""
-            # タイトル
-            title_el = li.select_one(".m-link-list-release__text, .p-top-news__text, .text")
-            title = title_el.get_text(strip=True) if title_el else a_tag.get_text(strip=True)
-            href = self._absolute_url(a_tag.get("href", ""))
-            entries.append(self._make_entry(date_str, title, href, category))
+            entries.append(self._make_entry(date_str, title, link, category))
+
         return entries
