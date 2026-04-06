@@ -87,13 +87,13 @@ COMPANY_LIST = [
         "name":         "マニュライフ生命",
         "base_url":     "https://www.manulife.co.jp",
         "pages": {
-            "A": ["https://www.manulife.co.jp/ja/individual/about/news-list.html"],
-            "B": ["https://www.manulife.co.jp/ja/individual/about/newsroom.html"],
+            "A": ["https://www.manulife.co.jp/ja/individual/about/newsrelease.html"],
+            "B": ["https://www.manulife.co.jp/ja/individual/about/newsrelease.html"],
         },
         "brand_score":  11,
         "scraper":      "manulife",
-        "enabled":      False,
-        "notes":        "Akamai WAF 403ブロック。curl/requestsでは取得不可。Playwright等のブラウザ自動化が必要",
+        "enabled":      True,
+        "notes":        "Akamai WAF保護。HTTP失敗時はキャッシュ(output/manulife_cache.json)から読み込み",
     },
 
     # ── 銀行窓販特化 ──
