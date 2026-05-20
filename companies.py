@@ -23,6 +23,31 @@
   },
 """
 
+from datetime import date as _date
+
+
+def _year_urls(template: str) -> list[str]:
+    """年度ベースのURLを前年・当年の2件生成する。
+
+    例: template="https://example.com/news/{year}/"
+        → ["https://example.com/news/2025/", "https://example.com/news/2026/"]
+
+    年をまたぐデータ取得漏れを防ぐため、常に前年と当年の両方を返す。
+    """
+    cur = _date.today().year
+    return [template.format(year=cur - 1), template.format(year=cur)]
+
+
+def _nendo_urls(template: str) -> list[str]:
+    """日本の年度（4月始まり）ベースのURLを前年度・当年度の2件生成する。
+
+    例: template="https://example.com/news/?nendo={year}"
+    4月以降は当年度、3月以前は前年度が「現在の年度」となる。
+    """
+    today = _date.today()
+    cur_nendo = today.year if today.month >= 4 else today.year - 1
+    return [template.format(year=cur_nendo - 1), template.format(year=cur_nendo)]
+
 # ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 #  対象会社一覧（13社） - 2026/03 時点
 # ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
@@ -60,12 +85,12 @@ COMPANY_LIST = [
         "base_url":     "https://www.meijiyasuda.co.jp",
         "pages": {
             "A": ["https://www.meijiyasuda.co.jp/profile/news/topics/"],
-            "B": ["https://www.meijiyasuda.co.jp/profile/news/release/2025/"],
+            "B": _year_urls("https://www.meijiyasuda.co.jp/profile/news/release/{year}/"),
         },
         "brand_score":  14,
         "scraper":      "meiji_yasuda",
         "enabled":      True,
-        "notes":        "",
+        "notes":        "年度別URL（前年・当年を自動取得）",
     },
 
     # ── 外資系 ──
@@ -102,13 +127,13 @@ COMPANY_LIST = [
         "name":         "三井住友海上プライマリー生命",
         "base_url":     "https://www.ms-primary.com",
         "pages": {
-            "A": ["https://www.ms-primary.com/news/info/2025/"],
-            "B": ["https://www.ms-primary.com/news/ir/2025/"],
+            "A": _year_urls("https://www.ms-primary.com/news/info/{year}/"),
+            "B": _year_urls("https://www.ms-primary.com/news/ir/{year}/"),
         },
         "brand_score":  12,
         "scraper":      "ms_primary",
         "enabled":      True,
-        "notes":        "",
+        "notes":        "年度別URL（前年・当年を自動取得）",
     },
     {
         "key":          "nissay-wealth",
@@ -141,12 +166,12 @@ COMPANY_LIST = [
         "name":         "T&Dフィナンシャル生命",
         "base_url":     "https://www.tdf-life.co.jp",
         "pages": {
-            "B": ["https://www.tdf-life.co.jp/newsrelease/index.php?nendo=2025"],
+            "B": _nendo_urls("https://www.tdf-life.co.jp/newsrelease/index.php?nendo={year}"),
         },
         "brand_score":  8,
         "scraper":      "td_financial",
         "enabled":      True,
-        "notes":        "",
+        "notes":        "年度別URL・nendoパラメータ（前年度・当年度を自動取得）",
     },
 
     # ── その他 ──
@@ -156,12 +181,12 @@ COMPANY_LIST = [
         "base_url":     "https://www.sonylife.co.jp",
         "pages": {
             "A": ["https://www.sonylife.co.jp/info/"],
-            "B": ["https://www.sonylife.co.jp/company/news/2025/"],
+            "B": _year_urls("https://www.sonylife.co.jp/company/news/{year}/"),
         },
         "brand_score":  12,
         "scraper":      "sonylife",
         "enabled":      True,
-        "notes":        "SSL問題あり。curl フォールバックで取得",
+        "notes":        "SSL問題あり。curl フォールバックで取得。年度別URL（前年・当年を自動取得）",
     },
     {
         "key":          "orix",
