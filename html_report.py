@@ -465,6 +465,9 @@ tbody td { padding: 11px 14px; vertical-align: top; }
     <button class="nav-item" onclick="go('charts')">
       分析チャート
     </button>
+    <button class="nav-item" id="nav-health" onclick="go('health')" style="margin-top:12px">
+      🔔 取得ステータス <span class="nav-count" id="nc-alert" style="background:#ff4b4b;display:none">0</span>
+    </button>
 
     <h3>フィルター</h3>
     <input type="text" id="search" placeholder="キーワード検索..." oninput="refresh()">
@@ -532,6 +535,7 @@ tbody td { padding: 11px 14px; vertical-align: top; }
     <div id="page-catB" style="display:none"></div>
     <div id="page-catC" style="display:none"></div>
     <div id="page-charts" style="display:none"></div>
+    <div id="page-health" style="display:none"></div>
 
     <div class="footer">保険リリース自動取得ツール v3</div>
   </div>
@@ -539,6 +543,7 @@ tbody td { padding: 11px 14px; vertical-align: top; }
 
 <script>
 var DATA = /*DATA_JSON*/[];
+var HEALTH = /*HEALTH_JSON*/{"summary":{"total":0,"ok":0,"warning":0,"error":0},"companies":[],"generated_at":""};
 var currentPage = 'ranking';
 var GH_CONFIG = /*GH_CONFIG_JSON*/{"owner":"","repo":"","enabled":false};
 var NEW_DAYS = 3; // 新着とみなす日数
@@ -689,11 +694,19 @@ function refresh(){
   document.getElementById('page-catB').innerHTML = buildTable(getFiltered('B'), 'カテゴリB: ニュースリリース');
   document.getElementById('page-catC').innerHTML = buildTable(getFiltered('C'), 'カテゴリC: プレスリリース');
   renderCharts();
+  renderHealth();
+  // ヘルスアラートバッジ
+  var errCnt = (HEALTH.summary.error||0) + (HEALTH.summary.warning||0);
+  var badge = document.getElementById('nc-alert');
+  if(badge){
+    if(errCnt > 0){ badge.textContent=errCnt; badge.style.display='inline-block'; }
+    else { badge.style.display='none'; }
+  }
 }
 
 function go(page){
   currentPage = page;
-  ['ranking','catA','catB','catC','charts'].forEach(function(p){
+  ['ranking','catA','catB','catC','charts','health'].forEach(function(p){
     document.getElementById('page-'+p).style.display = p===page?'block':'none';
   });
   document.querySelectorAll('.nav-item').forEach(function(el,i){
@@ -701,10 +714,68 @@ function go(page){
   });
   if(event && event.target) event.target.classList.add('active');
   if(page==='charts') renderCharts();
+  if(page==='health') renderHealth();
   // モバイル: サイドバー閉じる
   document.getElementById('sidebar').classList.remove('open');
   document.getElementById('overlay').classList.remove('show');
   window.scrollTo(0,0);
+}
+
+function renderHealth(){
+  var el = document.getElementById('page-health');
+  if(!el) return;
+  var h = '<div class="section"><div class="section-header">🔔 取得ステータス</div>';
+  h += '<p style="font-size:0.85rem;color:var(--text-light);margin-bottom:16px">最終チェック: '+esc(HEALTH.generated_at||'—')+'</p>';
+
+  // サマリーカード
+  var s = HEALTH.summary||{};
+  h += '<div style="display:flex;gap:12px;flex-wrap:wrap;margin-bottom:20px">';
+  h += healthCard('✅ 正常', s.ok||0, '#21c354');
+  h += healthCard('⚠️ データなし', s.warning||0, '#ffa62b');
+  h += healthCard('❌ 取得エラー', s.error||0, '#ff4b4b');
+  h += '</div>';
+
+  // 会社別テーブル
+  h += '<table style="width:100%;border-collapse:collapse;font-size:0.85rem">';
+  h += '<thead><tr style="background:#f0f2f6">';
+  ['会社名','取得件数','抽出件数','状態','メッセージ'].forEach(function(col){
+    h += '<th style="padding:8px 12px;text-align:left;font-weight:600">'+col+'</th>';
+  });
+  h += '</tr></thead><tbody>';
+
+  var companies = HEALTH.companies||[];
+  // ERROR→WARNING→OKの順
+  var order = {ERROR:0,WARNING:1,OK:2};
+  companies.slice().sort(function(a,b){return (order[a.level]||9)-(order[b.level]||9);}).forEach(function(c,i){
+    var bg = i%2===0?'#fff':'#fafafa';
+    var badge = c.level==='ERROR'
+      ? '<span style="background:#ff4b4b;color:#fff;padding:2px 8px;border-radius:4px;font-size:0.75rem">ERROR</span>'
+      : c.level==='WARNING'
+      ? '<span style="background:#ffa62b;color:#fff;padding:2px 8px;border-radius:4px;font-size:0.75rem">WARNING</span>'
+      : '<span style="background:#21c354;color:#fff;padding:2px 8px;border-radius:4px;font-size:0.75rem">OK</span>';
+    h += '<tr style="background:'+bg+';border-bottom:1px solid #e6e9ef">';
+    h += '<td style="padding:8px 12px;font-weight:500">'+esc(c.name)+'</td>';
+    h += '<td style="padding:8px 12px;text-align:right">'+c.raw_count+'</td>';
+    h += '<td style="padding:8px 12px;text-align:right">'+c.filter_count+'</td>';
+    h += '<td style="padding:8px 12px">'+badge+'</td>';
+    h += '<td style="padding:8px 12px;color:var(--text-light)">'+esc(c.message)+'</td>';
+    h += '</tr>';
+    // エラー詳細
+    if(c.errors && c.errors.length){
+      h += '<tr style="background:#fff5f5"><td colspan="5" style="padding:4px 24px;font-size:0.78rem;color:#cc0000">';
+      c.errors.forEach(function(e){ h += '└ '+esc(e)+'<br>'; });
+      h += '</td></tr>';
+    }
+  });
+  h += '</tbody></table></div>';
+  el.innerHTML = h;
+}
+
+function healthCard(label, count, color){
+  return '<div style="background:#fff;border:1px solid '+color+';border-radius:8px;padding:12px 20px;min-width:120px;text-align:center">'
+    + '<div style="font-size:1.4rem;font-weight:700;color:'+color+'">'+count+'</div>'
+    + '<div style="font-size:0.8rem;color:var(--text-light)">'+label+'</div>'
+    + '</div>';
 }
 
 function toggleSidebar(){
@@ -885,8 +956,27 @@ def generate_html_report(
     }
     gh_config_json = json.dumps(gh_config, ensure_ascii=False)
 
+    # ヘルスチェック結果を埋め込む
+    from health_checker import HEALTH_JSON as _HEALTH_JSON
+    health_payload: dict = {
+        "summary": {"total": 0, "ok": 0, "warning": 0, "error": 0},
+        "companies": [],
+        "generated_at": "",
+    }
+    if os.path.exists(_HEALTH_JSON):
+        try:
+            with open(_HEALTH_JSON, encoding="utf-8") as hf:
+                health_payload = json.load(hf)
+        except Exception:
+            pass
+    health_json = json.dumps(health_payload, ensure_ascii=False)
+
     html = HTML_TEMPLATE
     html = html.replace("/*DATA_JSON*/[]", json_data)
+    html = html.replace(
+        '/*HEALTH_JSON*/{"summary":{"total":0,"ok":0,"warning":0,"error":0},"companies":[],"generated_at":""}',
+        health_json,
+    )
     html = html.replace('/*GH_CONFIG_JSON*/{"owner":"","repo":"","enabled":false}', gh_config_json)
     html = html.replace("<!--PERIOD-->", period)
     html = html.replace("<!--GENERATED-->", now)

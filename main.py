@@ -30,6 +30,7 @@ from scorer import score_categorized
 from analyzer import analyze_categorized
 from exporter import export_categorized_excel, export_csv
 from html_report import generate_html_report
+from health_checker import check_health, format_health_report, save_health_json
 
 logging.basicConfig(
     level=logging.INFO,
@@ -41,17 +42,26 @@ logger = logging.getLogger(__name__)
 
 def fetch_all_categorized(
     companies: list[str] | None = None,
-) -> dict[str, list[dict]]:
+) -> tuple[dict[str, list[dict]], dict[str, int], dict[str, int], dict[str, list[str]]]:
     """全社のリリースをカテゴリ別に取得・フィルタリング
 
     Returns:
-        {"A": [...], "B": [...], "C": [...]}
+        (
+          categorized,          # {"A": [...], "B": [...], "C": [...]}
+          raw_by_company,       # {会社名: 取得件数}
+          filtered_by_company,  # {会社名: フィルタ後件数}
+          errors_by_company,    # {会社名: [エラーメッセージ, ...]}
+        )
     """
     if companies is None:
         companies = list(SCRAPER_MAP.keys())
 
     # カテゴリ別の生データ
     raw_by_cat: dict[str, list[dict]] = {"A": [], "B": [], "C": []}
+
+    # 会社別の統計（ヘルスチェック用）
+    raw_by_company:      dict[str, int]        = {}
+    errors_by_company:   dict[str, list[str]]  = {}
 
     for key in companies:
         if key not in SCRAPER_MAP:
@@ -61,28 +71,26 @@ def fetch_all_categorized(
         scraper = SCRAPER_MAP[key]()
         company_cfg = COMPANIES.get(key, {})
         available_cats = company_cfg.get("pages", {}).keys()
+        company_name = scraper.company_name
+        raw_by_company[company_name] = 0
+        errors_by_company[company_name] = []
 
         for cat in ("A", "B", "C"):
             if cat not in available_cats:
                 continue
             try:
                 entries = scraper.fetch_releases(category=cat)
-                # カテゴリラベル付与
                 for e in entries:
                     e["category"] = cat
                 raw_by_cat[cat].extend(entries)
+                raw_by_company[company_name] = raw_by_company.get(company_name, 0) + len(entries)
             except Exception as e:
-                logger.error(f"[{scraper.company_name}] カテゴリ{cat} 取得エラー: {e}")
-
-        # 取得件数表示
-        total = sum(
-            len(raw_by_cat[c])
-            for c in ("A", "B", "C")
-            if any(e.get("company") == scraper.company_name for e in raw_by_cat[c])
-        )
+                msg = f"カテゴリ{cat}: {e}"
+                logger.error(f"[{company_name}] {msg}")
+                errors_by_company[company_name].append(msg)
 
     # カテゴリ別にフィルタリング
-    result = {}
+    result: dict[str, list[dict]] = {}
     for cat in ("A", "B", "C"):
         filtered = filter_releases(raw_by_cat[cat])
         result[cat] = filtered
@@ -91,7 +99,15 @@ def fetch_all_categorized(
             f"{len(raw_by_cat[cat])}件 → フィルタ後 {len(filtered)}件"
         )
 
-    return result
+    # 会社別フィルタ後件数を集計
+    filtered_by_company: dict[str, int] = {name: 0 for name in raw_by_company}
+    for entries in result.values():
+        for e in entries:
+            name = e.get("company", "")
+            if name in filtered_by_company:
+                filtered_by_company[name] += 1
+
+    return result, raw_by_company, filtered_by_company, errors_by_company
 
 
 def run(
@@ -107,13 +123,19 @@ def run(
     print(f"{'='*60}\n")
 
     # 1. 全社取得 & フィルタリング
-    categorized = fetch_all_categorized(companies)
+    categorized, raw_by_company, filtered_by_company, errors_by_company = \
+        fetch_all_categorized(companies)
 
     total = sum(len(v) for v in categorized.values())
     print(f"\n--- 抽出結果サマリー ---")
     for cat in ("A", "B", "C"):
         print(f"  カテゴリ{cat}（{CATEGORY_LABELS[cat]}）: {len(categorized[cat])}件")
     print(f"  合計: {total}件\n")
+
+    # 1.5 ヘルスチェック（アラート表示）
+    health_list = check_health(raw_by_company, filtered_by_company, errors_by_company)
+    print(format_health_report(health_list))
+    save_health_json(health_list)
 
     if total == 0:
         print("抽出対象なし。")
