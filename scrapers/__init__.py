@@ -28,6 +28,8 @@ _CLASS_NAMES = {
     "orix": "OrixScraper",
     "td_financial": "TDFinancialScraper",
     "manulife": "ManulifeScraper",
+    "dai_ichi": "DaiIchiScraper",
+    "aflac": "AflacScraper",
 }
 
 for company in get_enabled_companies():

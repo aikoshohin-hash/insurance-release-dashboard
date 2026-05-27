@@ -227,32 +227,31 @@ COMPANY_LIST = [
         "notes":        "カテゴリA(news.json)は日付なし→フィルタで除外される",
     },
 
-    # ── 追加候補（enabled=False） ──
-    # 以下は未実装。スクレイパーを作成し enabled=True にすれば稼働します。
-    # {
-    #     "key":          "dai-ichi",
-    #     "name":         "第一生命",
-    #     "base_url":     "https://www.dai-ichi-life.co.jp",
-    #     "pages": {
-    #         "B": ["https://www.dai-ichi-life.co.jp/company/news/"],
-    #     },
-    #     "brand_score":  15,
-    #     "scraper":      "dai_ichi",
-    #     "enabled":      False,
-    #     "notes":        "スクレイパー未実装",
-    # },
-    # {
-    #     "key":          "aflac",
-    #     "name":         "アフラック生命",
-    #     "base_url":     "https://www.aflac.co.jp",
-    #     "pages": {
-    #         "B": ["https://www.aflac.co.jp/news_pdf/"],
-    #     },
-    #     "brand_score":  13,
-    #     "scraper":      "aflac",
-    #     "enabled":      False,
-    #     "notes":        "スクレイパー未実装",
-    # },
+    # ── 追加会社（2026/05 実装） ──
+    {
+        "key":          "dai-ichi",
+        "name":         "第一生命",
+        "base_url":     "https://www.dai-ichi-life.co.jp",
+        "pages": {
+            "B": ["https://www.dai-ichi-life.co.jp/company/news/"],
+        },
+        "brand_score":  15,
+        "scraper":      "dai_ichi",
+        "enabled":      True,
+        "notes":        "当年: common_v2/html/news/index.html / 前年: /company/news/{year}.html",
+    },
+    {
+        "key":          "aflac",
+        "name":         "アフラック生命",
+        "base_url":     "https://www.aflac.co.jp",
+        "pages": {
+            "B": ["https://www.aflac.co.jp/corp/profile/news/"],
+        },
+        "brand_score":  13,
+        "scraper":      "aflac",
+        "enabled":      True,
+        "notes":        "年度別URL: /corp/profile/news/{year}/ (前年・当年を自動取得)",
+    },
 ]
 
 
