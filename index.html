@@ -1,0 +1,879 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<meta name="robots" content="noindex, nofollow">
+<meta name="googlebot" content="noindex, nofollow">
+<title>保険リリース ダッシュボード</title>
+<style>
+:root {
+  --primary: #2F5496;
+  --primary-light: #4472C4;
+  --primary-bg: #f0f2f6;
+  --card-bg: #ffffff;
+  --text: #31333F;
+  --text-light: #808495;
+  --border: #e6e9ef;
+  --shadow: 0 1px 3px rgba(0,0,0,0.08);
+  --radius: 8px;
+  --rank-s: #ff4b4b;
+  --rank-a: #ffa62b;
+  --rank-b: #21c354;
+  --rank-c: #1c83e1;
+  --rank-d: #808495;
+}
+*, *::before, *::after { margin:0; padding:0; box-sizing:border-box; }
+html { font-size: 15px; -webkit-text-size-adjust: 100%; }
+body {
+  font-family: "Source Sans Pro", -apple-system, BlinkMacSystemFont,
+    "Segoe UI", "Hiragino Kaku Gothic ProN", "Noto Sans JP", sans-serif;
+  background: var(--primary-bg);
+  color: var(--text);
+  line-height: 1.6;
+  min-height: 100vh;
+}
+
+/* === レイアウト === */
+.app { display: flex; min-height: 100vh; }
+.sidebar {
+  width: 260px;
+  background: white;
+  border-right: 1px solid var(--border);
+  padding: 24px 20px;
+  position: fixed;
+  top: 0; left: 0; bottom: 0;
+  overflow-y: auto;
+  z-index: 100;
+  transition: transform 0.3s ease;
+}
+.main {
+  flex: 1;
+  margin-left: 260px;
+  padding: 24px 32px;
+  max-width: 1100px;
+}
+
+/* サイドバー */
+.sidebar .logo {
+  font-size: 1.15rem;
+  font-weight: 700;
+  color: var(--primary);
+  margin-bottom: 6px;
+}
+.sidebar .period {
+  font-size: 0.75rem;
+  color: var(--text-light);
+  margin-bottom: 20px;
+  padding-bottom: 16px;
+  border-bottom: 1px solid var(--border);
+}
+.sidebar h3 {
+  font-size: 0.72rem;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  color: var(--text-light);
+  margin: 16px 0 8px;
+}
+.sidebar select, .sidebar input {
+  width: 100%;
+  padding: 8px 10px;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  font-size: 0.87rem;
+  color: var(--text);
+  background: white;
+  margin-bottom: 8px;
+  outline: none;
+  transition: border-color 0.2s;
+}
+.sidebar select:focus, .sidebar input:focus { border-color: var(--primary-light); }
+.nav-item {
+  display: block;
+  width: 100%;
+  padding: 9px 12px;
+  border: none;
+  background: transparent;
+  text-align: left;
+  font-size: 0.9rem;
+  color: var(--text);
+  cursor: pointer;
+  border-radius: 6px;
+  margin-bottom: 2px;
+  transition: background 0.15s;
+}
+.nav-item:hover { background: var(--primary-bg); }
+.nav-item.active { background: var(--primary-bg); color: var(--primary); font-weight: 600; }
+.nav-count {
+  float: right;
+  background: var(--primary-bg);
+  color: var(--text-light);
+  font-size: 0.72rem;
+  padding: 1px 7px;
+  border-radius: 10px;
+}
+.nav-item.active .nav-count { background: white; color: var(--primary); }
+
+/* モバイルメニュー */
+.mobile-header {
+  display: none;
+  position: fixed;
+  top: 0; left: 0; right: 0;
+  height: 52px;
+  background: white;
+  border-bottom: 1px solid var(--border);
+  z-index: 200;
+  padding: 0 16px;
+  align-items: center;
+}
+.mobile-header .logo { font-weight: 700; color: var(--primary); }
+.hamburger {
+  width: 36px; height: 36px;
+  border: none; background: transparent; cursor: pointer;
+  display: flex; flex-direction: column; justify-content: center; gap: 5px;
+}
+.hamburger span { display:block; height:2px; width:20px; background:var(--text); border-radius:1px; }
+.overlay {
+  display: none;
+  position: fixed; inset: 0;
+  background: rgba(0,0,0,0.3);
+  z-index: 99;
+}
+.overlay.show { display: block; }
+
+/* === メトリクス === */
+.metrics {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 12px;
+  margin-bottom: 20px;
+}
+.metric {
+  background: var(--card-bg);
+  border-radius: var(--radius);
+  padding: 18px 16px;
+  box-shadow: var(--shadow);
+}
+.metric .label { font-size: 0.78rem; color: var(--text-light); margin-bottom: 4px; }
+.metric .value { font-size: 1.7rem; font-weight: 700; color: var(--primary); }
+.metric .sub { font-size: 0.72rem; color: var(--text-light); margin-top: 2px; }
+
+/* === テーブルビュー === */
+.table-wrap {
+  background: var(--card-bg);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow);
+  overflow: hidden;
+  margin-bottom: 16px;
+}
+.table-wrap .section-title {
+  padding: 14px 18px 10px;
+  font-size: 0.95rem;
+  font-weight: 600;
+  color: var(--text);
+  border-bottom: 1px solid var(--border);
+}
+table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.85rem;
+}
+thead th {
+  text-align: left;
+  padding: 10px 14px;
+  font-weight: 600;
+  font-size: 0.75rem;
+  text-transform: uppercase;
+  letter-spacing: 0.3px;
+  color: var(--text-light);
+  border-bottom: 2px solid var(--border);
+  white-space: nowrap;
+  position: sticky;
+  top: 0;
+  background: white;
+}
+tbody tr {
+  border-bottom: 1px solid var(--border);
+  transition: background 0.1s;
+  cursor: pointer;
+}
+tbody tr:hover { background: #fafbfe; }
+tbody td { padding: 11px 14px; vertical-align: top; }
+.rank-cell {
+  font-weight: 800;
+  font-size: 0.9rem;
+  width: 40px;
+  text-align: center;
+}
+.rank-S { color: var(--rank-s); }
+.rank-A { color: var(--rank-a); }
+.rank-B { color: var(--rank-b); }
+.rank-C { color: var(--rank-c); }
+.rank-D { color: var(--rank-d); }
+.score-cell { font-weight: 600; width: 50px; }
+.stars-cell { color: #ffa62b; font-size: 0.8rem; white-space: nowrap; width: 80px; }
+.company-cell { font-weight: 500; white-space: nowrap; width: 130px; }
+.date-cell { color: var(--text-light); white-space: nowrap; width: 85px; font-size: 0.82rem; }
+.title-cell { min-width: 200px; }
+.title-cell a { color: var(--primary); text-decoration: none; }
+.title-cell a:hover { text-decoration: underline; }
+.tag {
+  display: inline-block;
+  background: #eef2f9;
+  color: var(--primary);
+  font-size: 0.7rem;
+  padding: 1px 7px;
+  border-radius: 3px;
+  margin: 2px 2px 0 0;
+}
+
+/* 詳細行 */
+.detail-tr td {
+  padding: 0;
+  border-bottom: 2px solid var(--primary-bg);
+}
+.detail-content {
+  display: none;
+  padding: 14px 18px 14px 54px;
+  background: #fafbfe;
+  font-size: 0.83rem;
+  color: #555;
+}
+.detail-content.open { display: block; }
+.detail-grid {
+  display: grid;
+  grid-template-columns: 1fr 220px;
+  gap: 16px;
+}
+.detail-grid .commentary {
+  line-height: 1.7;
+}
+.detail-grid .commentary strong { color: var(--text); }
+.score-breakdown { display: flex; flex-direction: column; gap: 5px; }
+.sb-row {
+  display: grid;
+  grid-template-columns: 80px 1fr 30px;
+  gap: 6px;
+  align-items: center;
+  font-size: 0.75rem;
+}
+.sb-label { color: var(--text-light); }
+.sb-track { height: 6px; background: #e8ebf0; border-radius: 3px; overflow: hidden; }
+.sb-fill { height: 100%; background: var(--primary-light); border-radius: 3px; }
+.sb-val { color: var(--text); text-align: right; font-weight: 500; }
+
+/* === チャート === */
+.charts-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 16px; }
+.chart-card {
+  background: var(--card-bg);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow);
+  padding: 18px;
+}
+.chart-card h3 { font-size: 0.88rem; color: var(--text); margin-bottom: 14px; }
+.hbar { display: flex; flex-direction: column; gap: 8px; }
+.hbar-row { display: grid; grid-template-columns: 100px 1fr 40px; gap: 8px; align-items: center; font-size: 0.8rem; }
+.hbar-label { text-align: right; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: var(--text); }
+.hbar-track { height: 18px; background: var(--primary-bg); border-radius: 4px; overflow: hidden; }
+.hbar-fill { height: 100%; border-radius: 4px; }
+.hbar-val { font-weight: 600; color: var(--text); }
+
+/* === 新着ハイライト === */
+.row-new {
+  background: linear-gradient(90deg, #fff8e1 0%, #fffdf5 100%) !important;
+  border-left: 3px solid #ffa62b;
+}
+.row-new:hover { background: #fff3cd !important; }
+.badge-new {
+  display: inline-block;
+  background: #ff4b4b;
+  color: white;
+  font-size: 0.6rem;
+  font-weight: 700;
+  padding: 1px 6px;
+  border-radius: 3px;
+  margin-left: 6px;
+  letter-spacing: 0.5px;
+  vertical-align: middle;
+  animation: pulse 2s ease-in-out infinite;
+}
+@keyframes pulse {
+  0%,100% { opacity: 1; }
+  50% { opacity: 0.6; }
+}
+.new-divider {
+  padding: 8px 18px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: var(--rank-a);
+  background: #fff8e1;
+  border-bottom: 1px solid #ffe0b2;
+}
+.metric-new .value { color: #ff4b4b !important; }
+
+/* === 更新ボタン === */
+.refresh-section {
+  margin-top: 16px;
+  padding-top: 16px;
+  border-top: 1px solid var(--border);
+}
+.btn-refresh {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  width: 100%;
+  padding: 10px 14px;
+  background: var(--primary);
+  color: white;
+  border: none;
+  border-radius: 6px;
+  font-size: 0.85rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.2s, transform 0.1s;
+}
+.btn-refresh:hover { background: var(--primary-light); }
+.btn-refresh:active { transform: scale(0.98); }
+.btn-refresh.loading {
+  background: #999;
+  pointer-events: none;
+}
+.btn-refresh .icon { font-size: 1rem; }
+.btn-refresh.loading .icon { animation: spin 1s linear infinite; }
+@keyframes spin { from{transform:rotate(0)} to{transform:rotate(360deg)} }
+.refresh-status {
+  margin-top: 8px;
+  font-size: 0.72rem;
+  color: var(--text-light);
+  text-align: center;
+  min-height: 18px;
+}
+.refresh-status.success { color: var(--rank-b); }
+.refresh-status.error { color: var(--rank-s); }
+.refresh-status.running { color: var(--rank-a); }
+.btn-download {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  width: 100%;
+  padding: 8px 14px;
+  background: white;
+  color: var(--primary);
+  border: 1px solid var(--primary);
+  border-radius: 6px;
+  font-size: 0.8rem;
+  font-weight: 500;
+  cursor: pointer;
+  margin-top: 8px;
+  transition: background 0.2s;
+  text-decoration: none;
+}
+.btn-download:hover { background: var(--primary-bg); }
+.gh-link {
+  display: block;
+  text-align: center;
+  font-size: 0.7rem;
+  color: var(--text-light);
+  margin-top: 8px;
+  text-decoration: none;
+}
+.gh-link:hover { color: var(--primary); }
+
+/* === フッター === */
+.footer { text-align: center; padding: 28px 0 20px; font-size: 0.72rem; color: var(--text-light); }
+
+/* === レスポンシブ === */
+@media (max-width: 900px) {
+  .charts-grid { grid-template-columns: 1fr; }
+  .detail-grid { grid-template-columns: 1fr; }
+  .metrics { grid-template-columns: repeat(2, 1fr); }
+}
+@media (max-width: 768px) {
+  .sidebar { transform: translateX(-100%); }
+  .sidebar.open { transform: translateX(0); box-shadow: 4px 0 20px rgba(0,0,0,0.15); }
+  .mobile-header { display: flex; justify-content: space-between; }
+  .main { margin-left: 0; padding: 68px 14px 14px; }
+  .metrics { grid-template-columns: repeat(2, 1fr); gap: 8px; }
+  .metric { padding: 12px; }
+  .metric .value { font-size: 1.3rem; }
+  table { font-size: 0.8rem; }
+  thead th, tbody td { padding: 8px 10px; }
+  .company-cell { width: auto; }
+  .hbar-row { grid-template-columns: 70px 1fr 35px; font-size: 0.75rem; }
+  .detail-content { padding-left: 18px; }
+}
+@media (max-width: 480px) {
+  .metrics { grid-template-columns: repeat(2, 1fr); }
+  .score-cell, .date-cell { display: none; }
+  .table-wrap { overflow-x: auto; }
+}
+</style>
+</head>
+<body>
+<div class="app">
+
+  <!-- モバイルヘッダー -->
+  <div class="mobile-header">
+    <span class="logo">保険リリース</span>
+    <button class="hamburger" onclick="toggleSidebar()">
+      <span></span><span></span><span></span>
+    </button>
+  </div>
+  <div class="overlay" id="overlay" onclick="toggleSidebar()"></div>
+
+  <!-- サイドバー -->
+  <div class="sidebar" id="sidebar">
+    <div class="logo">保険リリース ダッシュボード</div>
+    <div class="period">期間: 2025-10-01 - 2026-09-06</div>
+
+    <h3>ナビゲーション</h3>
+    <button class="nav-item active" onclick="go('ranking')">
+      総合ランキング <span class="nav-count" id="nc-all">0</span>
+    </button>
+    <button class="nav-item" onclick="go('catA')">
+      お知らせ (A) <span class="nav-count" id="nc-A">0</span>
+    </button>
+    <button class="nav-item" onclick="go('catB')">
+      ニュースリリース (B) <span class="nav-count" id="nc-B">0</span>
+    </button>
+    <button class="nav-item" onclick="go('catC')">
+      プレスリリース (C) <span class="nav-count" id="nc-C">0</span>
+    </button>
+    <button class="nav-item" onclick="go('charts')">
+      分析チャート
+    </button>
+    <button class="nav-item" id="nav-health" onclick="go('health')" style="margin-top:12px">
+      🔔 取得ステータス <span class="nav-count" id="nc-alert" style="background:#ff4b4b;display:none">0</span>
+    </button>
+
+    <h3>フィルター</h3>
+    <input type="text" id="search" placeholder="キーワード検索..." oninput="refresh()">
+    <select id="fRank" onchange="refresh()">
+      <option value="">全ランク</option>
+      <option value="S">S ランク</option>
+      <option value="A">A ランク</option>
+      <option value="B">B ランク</option>
+      <option value="C">C ランク</option>
+      <option value="D">D ランク</option>
+    </select>
+    <select id="fCompany" onchange="refresh()"></select>
+    <label style="display:flex;align-items:center;gap:6px;font-size:0.82rem;margin:6px 0;cursor:pointer">
+      <input type="checkbox" id="fNewOnly" onchange="refresh()" style="accent-color:var(--rank-s)"> 新着のみ表示
+    </label>
+
+    <!-- データ更新セクション -->
+    <div class="refresh-section">
+      <button class="btn-refresh" id="btnRefresh" onclick="triggerRefresh()">
+        <span class="icon">&#x21bb;</span> データ更新
+      </button>
+      <div class="refresh-status" id="refreshStatus"></div>
+
+      <a class="btn-download" href="latest.xlsx" download id="btnDownload" style="display:none">
+        &#x1F4E5; Excel ダウンロード
+      </a>
+
+      <a class="gh-link" id="ghLink" href="#" target="_blank" rel="noopener" style="display:none">
+        GitHub Actions &rarr;
+      </a>
+    </div>
+
+    <div style="margin-top:20px;padding-top:16px;border-top:1px solid var(--border);font-size:0.7rem;color:var(--text-light)">
+      作成: 2026/09/06 03:47
+    </div>
+  </div>
+
+  <!-- メインコンテンツ -->
+  <div class="main">
+
+    <!-- メトリクス -->
+    <div class="metrics">
+      <div class="metric">
+        <div class="label">総リリース数</div>
+        <div class="value" id="m-total">0</div>
+      </div>
+      <div class="metric">
+        <div class="label">S ランク</div>
+        <div class="value" style="color:var(--rank-s)" id="m-srank">0</div>
+      </div>
+      <div class="metric">
+        <div class="label">平均スコア</div>
+        <div class="value" id="m-avg">0</div>
+      </div>
+      <div class="metric metric-new">
+        <div class="label">新着 (3日以内)</div>
+        <div class="value" id="m-new">0</div>
+        <div class="sub" id="m-new-sub"></div>
+      </div>
+    </div>
+
+    <!-- ページ -->
+    <div id="page-ranking"></div>
+    <div id="page-catA" style="display:none"></div>
+    <div id="page-catB" style="display:none"></div>
+    <div id="page-catC" style="display:none"></div>
+    <div id="page-charts" style="display:none"></div>
+    <div id="page-health" style="display:none"></div>
+
+    <div class="footer">保険リリース自動取得ツール v3</div>
+  </div>
+</div>
+
+<script>
+var DATA = [{"title": "「円貨建・一時払養老保険」の発売について", "company": "明治安田生命", "date": "2026/08/27", "url": "https://www.meijiyasuda.co.jp/profile/news/release/2026/pdf/20260827_01.pdf", "category": "B", "cat_key": "B", "cat_label": "ニュースリリース", "score": 79.0, "score_detail": {"keyword": 25, "recency": 13.0, "ichiji": 12.0, "category": 10, "brand": 14}, "rank_label": "S", "popularity": 3, "product_type": "養老保険", "action_type": "", "commentary": "商品タイプ: 養老保険 -満期保険金と死亡保険金が同額の貯蓄型保険。法人向け福利厚生としても活用される。", "reason": "キーワード一致: 「発売」"}, {"title": "メットライフ生命、一時払終身保険「サニーガーデン プライム」を営業社員による直販および保険代理店チャネルで販売開始通貨、利率保証期間、運用成果の受け取り方法などを自由に選択可能", "company": "メットライフ生命", "date": "2026/06/29", "url": "https://www.metlife.co.jp/about/press/2026/260629_1/", "category": "C", "cat_key": "C", "cat_label": "プレスリリース", "score": 73.0, "score_detail": {"keyword": 28, "recency": 5.0, "ichiji": 12.0, "category": 15, "brand": 13}, "rank_label": "A", "popularity": 5, "product_type": "一時払終身保険", "action_type": "新商品発売", "commentary": "[新商品発売] 新たに市場投入される商品。販売チャネルの動向やターゲット顧客層に注目。 / 商品タイプ: 一時払終身保険 -相続対策・資産移転に活用される商品。死亡保険金の非課税枠を活用でき、銀行窓販の主力商品のひとつ。", "reason": "キーワード一致: 「販売」"}, {"title": "メットライフ生命、一時払終身保険「サニーガーデン プライム」を発売運用通貨、利率保証期間、運用成果の受け取り方法などを自由に選択可能", "company": "メットライフ生命", "date": "2026/03/30", "url": "https://www.metlife.co.jp/content/dam/metlifecom/jp/corp/pdf/about/press/2026/260330_1.pdf", "category": "C", "cat_key": "C", "cat_label": "プレスリリース", "score": 72.0, "score_detail": {"keyword": 25, "recency": 2.0, "ichiji": 12.0, "category": 15, "brand": 13}, "rank_label": "A", "popularity": 3, "product_type": "一時払終身保険", "action_type": "", "commentary": "商品タイプ: 一時払終身保険 -相続対策・資産移転に活用される商品。死亡保険金の非課税枠を活用でき、銀行窓販の主力商品のひとつ。", "reason": "キーワード一致: 「発売」"}, {"title": "【新商品】「指定通貨建積立利率更改型一時払終身保険（無告知型）無配当」等の発売について", "company": "ソニー生命", "date": "2025/12/15", "url": "https://www.sonylife.co.jp/company/news/2025/files/251215_shinsyohin.pdf", "category": "B", "cat_key": "B", "cat_label": "ニュースリリース", "score": 71.0, "score_detail": {"keyword": 30, "recency": 2.0, "ichiji": 12.0, "category": 10, "brand": 12}, "rank_label": "A", "popularity": 5, "product_type": "一時払終身保険", "action_type": "新商品発売", "commentary": "[新商品発売] 新たに市場投入される商品。販売チャネルの動向やターゲット顧客層に注目。 / 商品タイプ: 一時払終身保険 -相続対策・資産移転に活用される商品。死亡保険金の非課税枠を活用でき、銀行窓販の主力商品のひとつ。", "reason": "キーワード一致: 「発売」"}, {"title": "「救Ｑ隊Ｃｕｂｅ」の発売等について", "company": "住友生命", "date": "2026/08/25", "url": "https://www.sumitomolife.co.jp/news/news_file/file/260825.pdf", "category": "B", "cat_key": "B", "cat_label": "ニュースリリース", "score": 67.0, "score_detail": {"keyword": 25, "recency": 13.0, "ichiji": 0.0, "category": 10, "brand": 14}, "rank_label": "A", "popularity": 1, "product_type": "", "action_type": "", "commentary": "ニュースリリース。事業活動に関する公式発表。", "reason": "キーワード一致: 「発売」"}, {"title": "新通貨選択生存保障重視型個人年金保険（指数連動型）『みのり充実』 全国の代理店で販売開始", "company": "三井住友海上プライマリー生命", "date": "2026/03/31", "url": "https://www.ms-primary.com/news/ir/assets/20260331_minorijyujitsu.pdf", "category": "B", "cat_key": "B", "cat_label": "ニュースリリース", "score": 65.0, "score_detail": {"keyword": 28, "recency": 2.0, "ichiji": 8.0, "category": 10, "brand": 12}, "rank_label": "A", "popularity": 5, "product_type": "個人年金保険", "action_type": "新商品発売", "commentary": "[新商品発売] 新たに市場投入される商品。販売チャネルの動向やターゲット顧客層に注目。 / 商品タイプ: 個人年金保険 -老後資金準備の定番商品。個人年金保険料控除の対象となり税制メリットがある。", "reason": "キーワード一致: 「販売」"}, {"title": "個人保険・個人年金保険のすえ置金等の利率の改定について", "company": "第一生命", "date": "2026/08/03", "url": "https://www.dai-ichi-life.co.jp/company/news/pdf/2026_013.pdf", "category": "B", "cat_key": "B", "cat_label": "ニュースリリース", "score": 64.0, "score_detail": {"keyword": 18, "recency": 8.0, "ichiji": 8.0, "category": 10, "brand": 15}, "rank_label": "A", "popularity": 2, "product_type": "個人年金保険", "action_type": "商品改定", "commentary": "[商品改定] 既存商品の仕様変更。改定内容（利率変更、保障内容変更等）を確認すること。 / 商品タイプ: 個人年金保険 -老後資金準備の定番商品。個人年金保険料控除の対象となり税制メリットがある。", "reason": "キーワード一致: 「改定」"}, {"title": "『未来につなげる終身保険v2』を新たに大光銀行で販売開始", "company": "マニュライフ生命", "date": "2025/12/02", "url": "https://www.manulife.co.jp/content/dam/insurance/jp/documents/press/2025/1202.pdf", "category": "B", "cat_key": "B", "cat_label": "ニュースリリース", "score": 64.0, "score_detail": {"keyword": 28, "recency": 2.0, "ichiji": 8.0, "category": 10, "brand": 11}, "rank_label": "A", "popularity": 5, "product_type": "", "action_type": "新商品発売", "commentary": "[新商品発売] 新たに市場投入される商品。販売チャネルの動向やターゲット顧客層に注目。", "reason": "キーワード一致: 「販売」"}, {"title": "太陽生命、「死亡保障」を備えつつ「お金を増やす」ことができる『一時払終身保険』を発売！", "company": "太陽生命", "date": "2026/03/27", "url": "https://www.taiyo-seimei.co.jp/company/notice/pdf/press_article/2025/sauhdj000000018z-att/20260327_1.pdf", "category": "B", "cat_key": "B", "cat_label": "ニュースリリース", "score": 63.0, "score_detail": {"keyword": 25, "recency": 2.0, "ichiji": 12.0, "category": 10, "brand": 9}, "rank_label": "A", "popularity": 3, "product_type": "一時払終身保険", "action_type": "", "commentary": "商品タイプ: 一時払終身保険 -相続対策・資産移転に活用される商品。死亡保険金の非課税枠を活用でき、銀行窓販の主力商品のひとつ。", "reason": "キーワード一致: 「発売」"}, {"title": "『積立金区分型終身保険特約（確定積増型）付指定通貨建特別終身保険』を販売開始", "company": "ニッセイ・ウェルス生命", "date": "2025/10/01", "url": "https://www.nw-life.co.jp/news/release/pdf/n251001.pdf", "category": "B", "cat_key": "B", "cat_label": "ニュースリリース", "score": 63.0, "score_detail": {"keyword": 28, "recency": 2.0, "ichiji": 8.0, "category": 10, "brand": 10}, "rank_label": "A", "popularity": 5, "product_type": "", "action_type": "新商品発売", "commentary": "[新商品発売] 新たに市場投入される商品。販売チャネルの動向やターゲット顧客層に注目。", "reason": "キーワード一致: 「販売」"}, {"title": "新商品ニッセイみらいのカタチ「治療サポート保険“ぴたほ”」の発売について[1,344KB]", "company": "日本生命", "date": "2026/03/04", "url": "https://www.nissay.co.jp/sites/default/files/assets/news/files/20260304.pdf", "category": "B", "cat_key": "B", "cat_label": "ニュースリリース", "score": 62.0, "score_detail": {"keyword": 30, "recency": 2.0, "ichiji": 0.0, "category": 10, "brand": 15}, "rank_label": "A", "popularity": 4, "product_type": "", "action_type": "新商品発売", "commentary": "[新商品発売] 新たに市場投入される商品。販売チャネルの動向やターゲット顧客層に注目。", "reason": "キーワード一致: 「発売」"}, {"title": "変額個人年金保険『私のしあわせねんきん』を発売", "company": "三井住友海上プライマリー生命", "date": "2026/02/24", "url": "https://www.ms-primary.com/news/ir/assets/20260224_shiawasenenkin.pdf", "category": "B", "cat_key": "B", "cat_label": "ニュースリリース", "score": 62.0, "score_detail": {"keyword": 25, "recency": 2.0, "ichiji": 8.0, "category": 10, "brand": 12}, "rank_label": "A", "popularity": 2, "product_type": "個人年金保険", "action_type": "", "commentary": "商品タイプ: 個人年金保険 -老後資金準備の定番商品。個人年金保険料控除の対象となり税制メリットがある。", "reason": "キーワード一致: 「発売」"}, {"title": "メットライフ生命、1976年発売の医療保険が50周年医療の変化に合わせ進化し、お客さまに寄り添い、累計ご契約件数1,000万件超", "company": "メットライフ生命", "date": "2026/02/26", "url": "https://www.metlife.co.jp/content/dam/metlifecom/jp/corp/pdf/about/press/2026/260226.pdf", "category": "C", "cat_key": "C", "cat_label": "プレスリリース", "score": 60.0, "score_detail": {"keyword": 25, "recency": 2.0, "ichiji": 0.0, "category": 15, "brand": 13}, "rank_label": "A", "popularity": 2, "product_type": "", "action_type": "", "commentary": "プレスリリース。メディア向けの公式発表で注目度が高い。", "reason": "キーワード一致: 「発売」"}, {"title": "メットライフ生命、変額介護定期保険「ブライトアクション」を発売経営者の多様な資金ニーズに備える法人向け保険", "company": "メットライフ生命", "date": "2026/01/20", "url": "https://www.metlife.co.jp/content/dam/metlifecom/jp/corp/pdf/about/press/2026/260120.pdf", "category": "C", "cat_key": "C", "cat_label": "プレスリリース", "score": 60.0, "score_detail": {"keyword": 25, "recency": 2.0, "ichiji": 0.0, "category": 15, "brand": 13}, "rank_label": "A", "popularity": 2, "product_type": "介護・認知症関連商品", "action_type": "", "commentary": "商品タイプ: 介護・認知症関連商品 -高齢化社会で需要増加中の保障商品。要介護認定で保険金が支払われ、介護費用に充当可能。", "reason": "キーワード一致: 「発売」"}, {"title": "「明治安田の長期運用年金」の保険料率の改定", "company": "明治安田生命", "date": "2026/08/20", "url": "https://www.meijiyasuda.co.jp/profile/news/release/2026/pdf/20260820_01.pdf", "category": "B", "cat_key": "B", "cat_label": "ニュースリリース", "score": 58.0, "score_detail": {"keyword": 18, "recency": 11.0, "ichiji": 0.0, "category": 10, "brand": 14}, "rank_label": "B", "popularity": 1, "product_type": "", "action_type": "商品改定", "commentary": "[商品改定] 既存商品の仕様変更。改定内容（利率変更、保障内容変更等）を確認すること。", "reason": "キーワード一致: 「改定」"}, {"title": "みずほ銀行を通じ、『みらいの恵み』を販売開始", "company": "ニッセイ・ウェルス生命", "date": "2026/07/01", "url": "https://www.nw-life.co.jp/news/release/pdf/n260701.pdf", "category": "B", "cat_key": "B", "cat_label": "ニュースリリース", "score": 58.0, "score_detail": {"keyword": 28, "recency": 5.0, "ichiji": 0.0, "category": 10, "brand": 10}, "rank_label": "B", "popularity": 4, "product_type": "", "action_type": "新商品発売", "commentary": "[新商品発売] 新たに市場投入される商品。販売チャネルの動向やターゲット顧客層に注目。", "reason": "キーワード一致: 「販売」"}, {"title": "保険金据置利率等の改定について", "company": "日本生命", "date": "2025/10/14", "url": "https://www.nissay.co.jp/news/2025/pdf/20251014.pdf", "category": "B", "cat_key": "B", "cat_label": "ニュースリリース", "score": 58.0, "score_detail": {"keyword": 18, "recency": 2.0, "ichiji": 8.0, "category": 10, "brand": 15}, "rank_label": "B", "popularity": 2, "product_type": "据置型商品", "action_type": "商品改定", "commentary": "[商品改定] 既存商品の仕様変更。改定内容（利率変更、保障内容変更等）を確認すること。 / 商品タイプ: 据置型商品 -一定期間据え置くことで運用益を期待する商品。据置期間の選択が運用成果に影響する。", "reason": "キーワード一致: 「改定」"}, {"title": "日本初、投資一任サービスの利用者を対象とした死亡保障の団体保険「ウェルス定期保険」の取扱開始", "company": "第一生命", "date": "2026/04/13", "url": "https://www.dai-ichi-life.co.jp/company/news/pdf/2026_004.pdf", "category": "B", "cat_key": "B", "cat_label": "ニュースリリース", "score": 57.0, "score_detail": {"keyword": 25, "recency": 2.0, "ichiji": 0.0, "category": 10, "brand": 15}, "rank_label": "B", "popularity": 4, "product_type": "", "action_type": "新商品発売", "commentary": "[新商品発売] 新たに市場投入される商品。販売チャネルの動向やターゲット顧客層に注目。", "reason": "キーワード一致: 「取扱」"}, {"title": "「保険料払込免除特約（ワイド型・ベーシック型）」の発売「失効取消制度」の導入", "company": "第一生命", "date": "2025/12/11", "url": "https://www.dai-ichi-life.co.jp/company/news/pdf/2025_033.pdf", "category": "B", "cat_key": "B", "cat_label": "ニュースリリース", "score": 57.0, "score_detail": {"keyword": 25, "recency": 2.0, "ichiji": 0.0, "category": 10, "brand": 15}, "rank_label": "B", "popularity": 2, "product_type": "", "action_type": "", "commentary": "ニュースリリース。事業活動に関する公式発表。", "reason": "キーワード一致: 「発売」"}, {"title": "太陽生命「保険組曲ＢｅｓｔＭＹＷＡＹ既成緩和プラス」を新発売！～健康状態に不安のあるお客様に、より幅広い保障を提供できるようになりました～", "company": "太陽生命", "date": "2025/11/28", "url": "https://www.taiyo-seimei.co.jp/company/notice/pdf/press_article/2025/c1lqbg00000017jq-att/20251128_5.pdf", "category": "B", "cat_key": "B", "cat_label": "ニュースリリース", "score": 56.0, "score_detail": {"keyword": 30, "recency": 2.0, "ichiji": 0.0, "category": 10, "brand": 9}, "rank_label": "B", "popularity": 4, "product_type": "", "action_type": "新商品発売", "commentary": "[新商品発売] 新たに市場投入される商品。販売チャネルの動向やターゲット顧客層に注目。", "reason": "キーワード一致: 「発売」"}, {"title": "大和証券を通じ、『ロングドリームNEXT』を販売開始", "company": "ニッセイ・ウェルス生命", "date": "2026/04/01", "url": "https://www.nw-life.co.jp/news/release/pdf/n260401_1.pdf", "category": "B", "cat_key": "B", "cat_label": "ニュースリリース", "score": 55.0, "score_detail": {"keyword": 28, "recency": 2.0, "ichiji": 0.0, "category": 10, "brand": 10}, "rank_label": "B", "popularity": 4, "product_type": "", "action_type": "新商品発売", "commentary": "[新商品発売] 新たに市場投入される商品。販売チャネルの動向やターゲット顧客層に注目。", "reason": "キーワード一致: 「販売」"}, {"title": "りそなグループ４行を通じ、『未来の布石』を販売開始", "company": "ニッセイ・ウェルス生命", "date": "2026/04/01", "url": "https://www.nw-life.co.jp/news/release/pdf/n260401_2.pdf", "category": "B", "cat_key": "B", "cat_label": "ニュースリリース", "score": 55.0, "score_detail": {"keyword": 28, "recency": 2.0, "ichiji": 0.0, "category": 10, "brand": 10}, "rank_label": "B", "popularity": 4, "product_type": "", "action_type": "新商品発売", "commentary": "[新商品発売] 新たに市場投入される商品。販売チャネルの動向やターゲット顧客層に注目。", "reason": "キーワード一致: 「販売」"}, {"title": "みずほ銀行にて無配当変額個人年金保険（年金原資保証・V型）販売名称『セキュアフライト』の販売を開始", "company": "T&Dフィナンシャル生命", "date": "2026/02/02", "url": "https://www.tdf-life.co.jp/newsrelease/pdf/202602021.pdf", "category": "B", "cat_key": "B", "cat_label": "ニュースリリース", "score": 55.0, "score_detail": {"keyword": 22, "recency": 2.0, "ichiji": 8.0, "category": 10, "brand": 8}, "rank_label": "B", "popularity": 2, "product_type": "個人年金保険", "action_type": "", "commentary": "商品タイプ: 個人年金保険 -老後資金準備の定番商品。個人年金保険料控除の対象となり税制メリットがある。", "reason": "キーワード一致: 「販売」"}, {"title": "新企業CM「拡・保険」篇を放映開始～サンボマスター「輝きだして走ってく」を起用～", "company": "住友生命", "date": "2026/08/31", "url": "https://www.sumitomolife.co.jp/news/news_file/file/260831.pdf", "category": "B", "cat_key": "B", "cat_label": "ニュースリリース", "score": 54.0, "score_detail": {"keyword": 10, "recency": 15.0, "ichiji": 0.0, "category": 10, "brand": 14}, "rank_label": "B", "popularity": 1, "product_type": "", "action_type": "", "commentary": "ニュースリリース。事業活動に関する公式発表。", "reason": "キーワード一致: 「開始」"}, {"title": "太陽生命、株式会社東北銀行を通じ、『長生きＭｙ介護』の販売を開始", "company": "太陽生命", "date": "2026/07/17", "url": "https://www.taiyo-seimei.co.jp/company/notice/pdf/press_article/2026/sauhdj000000045a-att/20260717_1.pdf", "category": "B", "cat_key": "B", "cat_label": "ニュースリリース", "score": 54.0, "score_detail": {"keyword": 22, "recency": 8.0, "ichiji": 0.0, "category": 10, "brand": 9}, "rank_label": "B", "popularity": 1, "product_type": "介護・認知症関連商品", "action_type": "", "commentary": "商品タイプ: 介護・認知症関連商品 -高齢化社会で需要増加中の保障商品。要介護認定で保険金が支払われ、介護費用に充当可能。", "reason": "キーワード一致: 「販売」"}, {"title": "資産形成×健康増進の新たな価値提供の拡がり「ドルつみ Vitality」販売件数10万件突破", "company": "住友生命", "date": "2026/07/13", "url": "https://www.sumitomolife.co.jp/news/detail/newsrelease_260713.html", "category": "B", "cat_key": "B", "cat_label": "ニュースリリース", "score": 54.0, "score_detail": {"keyword": 22, "recency": 8.0, "ichiji": 0.0, "category": 10, "brand": 14}, "rank_label": "B", "popularity": 1, "product_type": "", "action_type": "", "commentary": "ニュースリリース。事業活動に関する公式発表。", "reason": "キーワード一致: 「販売」"}, {"title": "miiveとベネフィット・ワン、「ベネワン スマート食事補助 powered by miive」を提供開始。第一生命が参画し、お客さまへの展開を加速～食事補助の非課税枠拡大を契機に、福利厚生を働くすべての人の日常に～", "company": "第一生命", "date": "2026/05/18", "url": "https://www.dai-ichi-life.co.jp/company/news/pdf/2026_008.pdf", "category": "B", "cat_key": "B", "cat_label": "ニュースリリース", "score": 54.0, "score_detail": {"keyword": 22, "recency": 2.0, "ichiji": 0.0, "category": 10, "brand": 15}, "rank_label": "B", "popularity": 4, "product_type": "", "action_type": "", "commentary": "ニュースリリース。事業活動に関する公式発表。", "reason": "キーワード一致: 「開始」"}, {"title": "ソニー生命、ライフプランナーによるソニー損保のペット保険の取扱開始について", "company": "ソニー生命", "date": "2026/01/15", "url": "https://www.sonylife.co.jp/company/news/2025/files/260115_pet.pdf", "category": "B", "cat_key": "B", "cat_label": "ニュースリリース", "score": 54.0, "score_detail": {"keyword": 25, "recency": 2.0, "ichiji": 0.0, "category": 10, "brand": 12}, "rank_label": "B", "popularity": 4, "product_type": "", "action_type": "新商品発売", "commentary": "[新商品発売] 新たに市場投入される商品。販売チャネルの動向やターゲット顧客層に注目。", "reason": "キーワード一致: 「取扱」"}, {"title": "ココヘリ捜索・救助費用ほけん「ONE（ワン）」（正式名称：捜索・救助費用保険）を第一スマート少額短期保険株式会社より提供開始～山岳捜索サービス「ココヘリ」会員専用の保険～", "company": "第一生命", "date": "2025/10/14", "url": "https://www.dai-ichi-life.co.jp/company/news/pdf/2025_024.pdf", "category": "B", "cat_key": "B", "cat_label": "ニュースリリース", "score": 54.0, "score_detail": {"keyword": 22, "recency": 2.0, "ichiji": 0.0, "category": 10, "brand": 15}, "rank_label": "B", "popularity": 4, "product_type": "", "action_type": "", "commentary": "ニュースリリース。事業活動に関する公式発表。", "reason": "キーワード一致: 「開始」"}, {"title": "『こだわり個人年金（外貨建）v2』『こだわり個人年金（外貨建）』における一部改定のお知らせ", "company": "マニュライフ生命", "date": "2026/01/15", "url": "https://www.manulife.co.jp/ja/individual/about/newsrelease/news/2026/n20260115.html", "category": "B", "cat_key": "B", "cat_label": "ニュースリリース", "score": 53.0, "score_detail": {"keyword": 18, "recency": 2.0, "ichiji": 12.0, "category": 10, "brand": 11}, "rank_label": "B", "popularity": 3, "product_type": "外貨建保険", "action_type": "商品改定", "commentary": "[商品改定] 既存商品の仕様変更。改定内容（利率変更、保障内容変更等）を確認すること。 / 商品タイプ: 外貨建保険 -為替リスクがあるが円建より高い利回りが期待できる。銀行窓販では根強い人気がある一方、為替変動リスクの説明義務が重要。", "reason": "キーワード一致: 「改定」"}, {"title": "メットライフ生命、内勤社員の報酬制度を改定", "company": "メットライフ生命", "date": "2026/05/28", "url": "https://www.metlife.co.jp/content/dam/metlifecom/jp/corp/pdf/about/press/2026/260528.pdf", "category": "C", "cat_key": "C", "cat_label": "プレスリリース", "score": 53.0, "score_detail": {"keyword": 18, "recency": 2.0, "ichiji": 0.0, "category": 15, "brand": 13}, "rank_label": "B", "popularity": 2, "product_type": "", "action_type": "商品改定", "commentary": "[商品改定] 既存商品の仕様変更。改定内容（利率変更、保障内容変更等）を確認すること。", "reason": "キーワード一致: 「改定」"}, {"title": "年金支払開始後の予定利率（米ドル）の改定について", "company": "メットライフ生命", "date": "2026/01/29", "url": "https://www.metlife.co.jp/content/dam/metlifecom/jp/corp/pdf/about/press/2026/260129_1.pdf", "category": "C", "cat_key": "C", "cat_label": "プレスリリース", "score": 53.0, "score_detail": {"keyword": 18, "recency": 2.0, "ichiji": 0.0, "category": 15, "brand": 13}, "rank_label": "B", "popularity": 2, "product_type": "", "action_type": "商品改定", "commentary": "[商品改定] 既存商品の仕様変更。改定内容（利率変更、保障内容変更等）を確認すること。", "reason": "キーワード一致: 「開始」"}, {"title": "新商品CM“「なないろのパズル」篇”の放映開始について", "company": "日本生命", "date": "2026/04/02", "url": "https://www.nissay.co.jp/kaisha/topics/20260402.html", "category": "A", "cat_key": "A", "cat_label": "お知らせ", "score": 52.0, "score_detail": {"keyword": 30, "recency": 2.0, "ichiji": 0.0, "category": 5, "brand": 15}, "rank_label": "B", "popularity": 4, "product_type": "", "action_type": "新商品発売", "commentary": "[新商品発売] 新たに市場投入される商品。販売チャネルの動向やターゲット顧客層に注目。", "reason": "キーワード一致: 「開始」"}, {"title": "「災害保障期間付平準定期保険（無配当）」の改定・販売再開について", "company": "ソニー生命", "date": "2025/10/30", "url": "https://www.sonylife.co.jp/company/news/2025/files/251030_saikai.pdf", "category": "B", "cat_key": "B", "cat_label": "ニュースリリース", "score": 51.0, "score_detail": {"keyword": 22, "recency": 2.0, "ichiji": 0.0, "category": 10, "brand": 12}, "rank_label": "B", "popularity": 1, "product_type": "", "action_type": "商品改定", "commentary": "[商品改定] 既存商品の仕様変更。改定内容（利率変更、保障内容変更等）を確認すること。", "reason": "キーワード一致: 「販売」"}, {"title": "明治安田 新作CM「サザエさん 人生100年時代」篇の放映開始!", "company": "明治安田生命", "date": "2026/08/21", "url": "https://www.meijiyasuda.co.jp/profile/news/release/2026/pdf/20260821_01.pdf", "category": "B", "cat_key": "B", "cat_label": "ニュースリリース", "score": 50.0, "score_detail": {"keyword": 10, "recency": 11.0, "ichiji": 0.0, "category": 10, "brand": 14}, "rank_label": "B", "popularity": 1, "product_type": "", "action_type": "", "commentary": "ニュースリリース。事業活動に関する公式発表。", "reason": "キーワード一致: 「開始」"}, {"title": "団体年金保険一般勘定の上乗せ利率の改定について", "company": "日本生命", "date": "2026/05/21", "url": "https://www.nissay.co.jp/sites/default/files/assets/news/files/20260521.pdf", "category": "B", "cat_key": "B", "cat_label": "ニュースリリース", "score": 50.0, "score_detail": {"keyword": 18, "recency": 2.0, "ichiji": 0.0, "category": 10, "brand": 15}, "rank_label": "B", "popularity": 2, "product_type": "", "action_type": "商品改定", "commentary": "[商品改定] 既存商品の仕様変更。改定内容（利率変更、保障内容変更等）を確認すること。", "reason": "キーワード一致: 「改定」"}, {"title": "前納保険料の割引率等の改定について", "company": "第一生命", "date": "2026/01/23", "url": "https://www.dai-ichi-life.co.jp/company/news/pdf/2025_038.pdf", "category": "B", "cat_key": "B", "cat_label": "ニュースリリース", "score": 50.0, "score_detail": {"keyword": 18, "recency": 2.0, "ichiji": 0.0, "category": 10, "brand": 15}, "rank_label": "B", "popularity": 2, "product_type": "", "action_type": "商品改定", "commentary": "[商品改定] 既存商品の仕様変更。改定内容（利率変更、保障内容変更等）を確認すること。", "reason": "キーワード一致: 「改定」"}, {"title": "『こだわり変額保険v2』の累計販売件数10万件突破のお知らせ", "company": "マニュライフ生命", "date": "2025/10/20", "url": "https://www.manulife.co.jp/content/dam/insurance/jp/documents/press/2025/1020.pdf", "category": "B", "cat_key": "B", "cat_label": "ニュースリリース", "score": 50.0, "score_detail": {"keyword": 22, "recency": 2.0, "ichiji": 0.0, "category": 10, "brand": 11}, "rank_label": "B", "popularity": 1, "product_type": "変額保険/年金", "action_type": "", "commentary": "商品タイプ: 変額保険/年金 -運用実績により保険金額が変動する投資性の高い商品。市場リスクを顧客が負うため、適合性確認が特に重要。", "reason": "キーワード一致: 「販売」"}, {"title": "～健康増進活動や社会貢献活動の推進に向けた大学との取組～東海大学との健康増進プロジェクトを開始", "company": "住友生命", "date": "2026/09/04", "url": "https://www.sumitomolife.co.jp/news/detail/newsrelease_260904.html", "category": "B", "cat_key": "B", "cat_label": "ニュースリリース", "score": 49.0, "score_detail": {"keyword": 10, "recency": 15.0, "ichiji": 0.0, "category": 10, "brand": 14}, "rank_label": "B", "popularity": 1, "product_type": "", "action_type": "", "commentary": "ニュースリリース。事業活動に関する公式発表。", "reason": "キーワード一致: 「開始」"}, {"title": "太陽生命、社用スマートフォンを活用した地域見守り活動を開始～全国１万人の「見守り人」が地域社会の安全・安心に貢献～", "company": "太陽生命", "date": "2026/09/01", "url": "https://www.taiyo-seimei.co.jp/company/notice/pdf/press_article/2026/sauhdj00000004wo-att/20260901_3.pdf", "category": "B", "cat_key": "B", "cat_label": "ニュースリリース", "score": 49.0, "score_detail": {"keyword": 10, "recency": 15.0, "ichiji": 0.0, "category": 10, "brand": 9}, "rank_label": "B", "popularity": 1, "product_type": "", "action_type": "", "commentary": "ニュースリリース。事業活動に関する公式発表。", "reason": "キーワード一致: 「開始」"}, {"title": "保険料率の改定について", "company": "明治安田生命", "date": "2026/03/19", "url": "https://www.meijiyasuda.co.jp/profile/news/release/2025/pdf/20260319_02.pdf", "category": "B", "cat_key": "B", "cat_label": "ニュースリリース", "score": 49.0, "score_detail": {"keyword": 18, "recency": 2.0, "ichiji": 0.0, "category": 10, "brand": 14}, "rank_label": "B", "popularity": 1, "product_type": "", "action_type": "商品改定", "commentary": "[商品改定] 既存商品の仕様変更。改定内容（利率変更、保障内容変更等）を確認すること。", "reason": "キーワード一致: 「改定」"}, {"title": "「ニッセイ医療費白書」の提供開始について", "company": "日本生命", "date": "2025/12/19", "url": "https://www.nissay.co.jp/kaisha/news/20251219_2.html", "category": "B", "cat_key": "B", "cat_label": "ニュースリリース", "score": 49.0, "score_detail": {"keyword": 22, "recency": 2.0, "ichiji": 0.0, "category": 10, "brand": 15}, "rank_label": "B", "popularity": 4, "product_type": "", "action_type": "", "commentary": "ニュースリリース。事業活動に関する公式発表。", "reason": "キーワード一致: 「開始」"}, {"title": "公式ホームページ一部リニューアルのお知らせ", "company": "ソニー生命", "date": "2025/11/13", "url": "https://www.sonylife.co.jp/company/news/2025/files/251113_renewal.pdf", "category": "B", "cat_key": "B", "cat_label": "ニュースリリース", "score": 49.0, "score_detail": {"keyword": 20, "recency": 2.0, "ichiji": 0.0, "category": 10, "brand": 12}, "rank_label": "B", "popularity": 1, "product_type": "", "action_type": "商品リニューアル", "commentary": "[商品リニューアル] 既存商品の大幅な刷新。競合他社の類似商品と比較して優位性を確認。", "reason": "商品/サービス改定・開始に該当: 「リニューアル」"}, {"title": "「進学応援奨学金 supported by 日本生命」2026年度の募集開始について", "company": "日本生命", "date": "2026/08/24", "url": "https://www.nissay.co.jp/kaisha/news/20260824.html", "category": "B", "cat_key": "B", "cat_label": "ニュースリリース", "score": 48.0, "score_detail": {"keyword": 10, "recency": 13.0, "ichiji": 0.0, "category": 10, "brand": 15}, "rank_label": "B", "popularity": 2, "product_type": "", "action_type": "", "commentary": "ニュースリリース。事業活動に関する公式発表。", "reason": "キーワード一致: 「開始」"}, {"title": "太陽生命、はばたき信用組合を通じ、『長生きＭｙ介護』の販売を開始", "company": "太陽生命", "date": "2026/03/31", "url": "https://www.taiyo-seimei.co.jp/company/notice/pdf/press_article/2025/sauhdj00000001c9-att/20260331_1.pdf", "category": "B", "cat_key": "B", "cat_label": "ニュースリリース", "score": 48.0, "score_detail": {"keyword": 22, "recency": 2.0, "ichiji": 0.0, "category": 10, "brand": 9}, "rank_label": "B", "popularity": 1, "product_type": "介護・認知症関連商品", "action_type": "", "commentary": "商品タイプ: 介護・認知症関連商品 -高齢化社会で需要増加中の保障商品。要介護認定で保険金が支払われ、介護費用に充当可能。", "reason": "キーワード一致: 「販売」"}, {"title": "太陽生命、株式会社伊予銀行を通じ、『長生きＭｙ介護』の販売を開始", "company": "太陽生命", "date": "2026/02/27", "url": "https://www.taiyo-seimei.co.jp/company/notice/pdf/press_article/2025/sauhdj00000000p9-att/20260227_2.pdf", "category": "B", "cat_key": "B", "cat_label": "ニュースリリース", "score": 48.0, "score_detail": {"keyword": 22, "recency": 2.0, "ichiji": 0.0, "category": 10, "brand": 9}, "rank_label": "B", "popularity": 1, "product_type": "介護・認知症関連商品", "action_type": "", "commentary": "商品タイプ: 介護・認知症関連商品 -高齢化社会で需要増加中の保障商品。要介護認定で保険金が支払われ、介護費用に充当可能。", "reason": "キーワード一致: 「販売」"}, {"title": "『こだわり変額保険v2』で「世界分散」特別勘定をリニューアル", "company": "マニュライフ生命", "date": "2026/02/13", "url": "https://www.manulife.co.jp/content/dam/insurance/jp/documents/press/2026/0213.pdf", "category": "B", "cat_key": "B", "cat_label": "ニュースリリース", "score": 48.0, "score_detail": {"keyword": 20, "recency": 2.0, "ichiji": 0.0, "category": 10, "brand": 11}, "rank_label": "B", "popularity": 1, "product_type": "変額保険/年金", "action_type": "商品リニューアル", "commentary": "[商品リニューアル] 既存商品の大幅な刷新。競合他社の類似商品と比較して優位性を確認。 / 商品タイプ: 変額保険/年金 -運用実績により保険金額が変動する投資性の高い商品。市場リスクを顧客が負うため、適合性確認が特に重要。", "reason": "商品/サービス改定・開始に該当: 「リニューアル」"}, {"title": "太陽生命、株式会社福島銀行を通じ、『長生きＭｙ介護』の販売を開始", "company": "太陽生命", "date": "2026/01/30", "url": "https://www.taiyo-seimei.co.jp/company/notice/pdf/press_article/2025/sauhdj000000008b-att/20260130_1.pdf", "category": "B", "cat_key": "B", "cat_label": "ニュースリリース", "score": 48.0, "score_detail": {"keyword": 22, "recency": 2.0, "ichiji": 0.0, "category": 10, "brand": 9}, "rank_label": "B", "popularity": 1, "product_type": "介護・認知症関連商品", "action_type": "", "commentary": "商品タイプ: 介護・認知症関連商品 -高齢化社会で需要増加中の保障商品。要介護認定で保険金が支払われ、介護費用に充当可能。", "reason": "キーワード一致: 「販売」"}, {"title": "太陽生命、南都銀行を通じ、『長生きＭｙ介護』の販売を開始", "company": "太陽生命", "date": "2025/12/26", "url": "https://www.taiyo-seimei.co.jp/company/notice/pdf/press_article/2025/c1lqbg000000186w-att/20251226_1.pdf", "category": "B", "cat_key": "B", "cat_label": "ニュースリリース", "score": 48.0, "score_detail": {"keyword": 22, "recency": 2.0, "ichiji": 0.0, "category": 10, "brand": 9}, "rank_label": "B", "popularity": 1, "product_type": "介護・認知症関連商品", "action_type": "", "commentary": "商品タイプ: 介護・認知症関連商品 -高齢化社会で需要増加中の保障商品。要介護認定で保険金が支払われ、介護費用に充当可能。", "reason": "キーワード一致: 「販売」"}, {"title": "太陽生命、あいち銀行を通じ、『長生きＭｙ介護』の販売を開始", "company": "太陽生命", "date": "2025/11/28", "url": "https://www.taiyo-seimei.co.jp/company/notice/pdf/press_article/2025/c1lqbg00000017hx-att/20251128_4.pdf", "category": "B", "cat_key": "B", "cat_label": "ニュースリリース", "score": 48.0, "score_detail": {"keyword": 22, "recency": 2.0, "ichiji": 0.0, "category": 10, "brand": 9}, "rank_label": "B", "popularity": 1, "product_type": "介護・認知症関連商品", "action_type": "", "commentary": "商品タイプ: 介護・認知症関連商品 -高齢化社会で需要増加中の保障商品。要介護認定で保険金が支払われ、介護費用に充当可能。", "reason": "キーワード一致: 「販売」"}, {"title": "太陽生命、多摩信用金庫を通じ、『長生きＭｙ介護』の販売を開始", "company": "太陽生命", "date": "2025/11/14", "url": "https://www.taiyo-seimei.co.jp/company/notice/pdf/press_article/2025/c1lqbg00000016np-att/20251114_1.pdf", "category": "B", "cat_key": "B", "cat_label": "ニュースリリース", "score": 48.0, "score_detail": {"keyword": 22, "recency": 2.0, "ichiji": 0.0, "category": 10, "brand": 9}, "rank_label": "B", "popularity": 1, "product_type": "介護・認知症関連商品", "action_type": "", "commentary": "商品タイプ: 介護・認知症関連商品 -高齢化社会で需要増加中の保障商品。要介護認定で保険金が支払われ、介護費用に充当可能。", "reason": "キーワード一致: 「販売」"}, {"title": "太陽生命、金融機関代理店を通じ、『長生きＭｙ介護』の販売を開始", "company": "太陽生命", "date": "2025/10/31", "url": "https://www.taiyo-seimei.co.jp/company/notice/pdf/press_article/2025/c1lqbg00000016ho-att/20251031_1.pdf", "category": "B", "cat_key": "B", "cat_label": "ニュースリリース", "score": 48.0, "score_detail": {"keyword": 22, "recency": 2.0, "ichiji": 0.0, "category": 10, "brand": 9}, "rank_label": "B", "popularity": 1, "product_type": "介護・認知症関連商品", "action_type": "", "commentary": "商品タイプ: 介護・認知症関連商品 -高齢化社会で需要増加中の保障商品。要介護認定で保険金が支払われ、介護費用に充当可能。", "reason": "キーワード一致: 「販売」"}, {"title": "令和８年熊本地震により被災された方々に対するお取扱い", "company": "住友生命", "date": "2026/07/31", "url": "https://www.sumitomolife.co.jp/news/news_file/file/260731a.pdf", "category": "B", "cat_key": "B", "cat_label": "ニュースリリース", "score": 47.0, "score_detail": {"keyword": 10, "recency": 8.0, "ichiji": 0.0, "category": 10, "brand": 14}, "rank_label": "B", "popularity": 1, "product_type": "", "action_type": "", "commentary": "ニュースリリース。事業活動に関する公式発表。", "reason": "キーワード一致: 「取扱」"}, {"title": "令和8年熊本地震により被災されたお客さまへの対応について～ご契約に対する特別取扱い等～", "company": "明治安田生命", "date": "2026/07/31", "url": "https://www.meijiyasuda.co.jp/profile/news/release/2026/pdf/20260731_05.pdf", "category": "B", "cat_key": "B", "cat_label": "ニュースリリース", "score": 47.0, "score_detail": {"keyword": 10, "recency": 8.0, "ichiji": 0.0, "category": 10, "brand": 14}, "rank_label": "B", "popularity": 1, "product_type": "", "action_type": "", "commentary": "ニュースリリース。事業活動に関する公式発表。", "reason": "キーワード一致: 「取扱」"}, {"title": "企業イメージCM「明治安田Ｊリーグ新開幕」篇の放映開始!", "company": "明治安田生命", "date": "2026/07/22", "url": "https://www.meijiyasuda.co.jp/profile/news/release/2026/pdf/20260722_01.pdf", "category": "B", "cat_key": "B", "cat_label": "ニュースリリース", "score": 47.0, "score_detail": {"keyword": 10, "recency": 8.0, "ichiji": 0.0, "category": 10, "brand": 14}, "rank_label": "B", "popularity": 1, "product_type": "", "action_type": "", "commentary": "ニュースリリース。事業活動に関する公式発表。", "reason": "キーワード一致: 「開始」"}, {"title": "変額保険（有期型）『いろどる、みらい』を改定", "company": "三井住友海上プライマリー生命", "date": "2026/03/31", "url": "https://www.ms-primary.com/news/ir/assets/20260331_irodorumirai.pdf", "category": "B", "cat_key": "B", "cat_label": "ニュースリリース", "score": 47.0, "score_detail": {"keyword": 18, "recency": 2.0, "ichiji": 0.0, "category": 10, "brand": 12}, "rank_label": "B", "popularity": 1, "product_type": "変額保険/年金", "action_type": "商品改定", "commentary": "[商品改定] 既存商品の仕様変更。改定内容（利率変更、保障内容変更等）を確認すること。 / 商品タイプ: 変額保険/年金 -運用実績により保険金額が変動する投資性の高い商品。市場リスクを顧客が負うため、適合性確認が特に重要。", "reason": "キーワード一致: 「改定」"}, {"title": "「学資保険（無配当）」の保険料率等の改定について", "company": "ソニー生命", "date": "2026/03/05", "url": "https://www.sonylife.co.jp/company/news/2025/files/260305_gakushi.pdf", "category": "B", "cat_key": "B", "cat_label": "ニュースリリース", "score": 47.0, "score_detail": {"keyword": 18, "recency": 2.0, "ichiji": 0.0, "category": 10, "brand": 12}, "rank_label": "B", "popularity": 1, "product_type": "", "action_type": "商品改定", "commentary": "[商品改定] 既存商品の仕様変更。改定内容（利率変更、保障内容変更等）を確認すること。", "reason": "キーワード一致: 「改定」"}, {"title": "企業の健康経営を支援する「精密検査費用保険」の商品改定について", "company": "日本生命", "date": "2025/12/03", "url": "https://www.nissay.co.jp/kaisha/news/20251203.html", "category": "B", "cat_key": "B", "cat_label": "ニュースリリース", "score": 47.0, "score_detail": {"keyword": 20, "recency": 2.0, "ichiji": 0.0, "category": 10, "brand": 15}, "rank_label": "B", "popularity": 2, "product_type": "", "action_type": "商品改定", "commentary": "[商品改定] 既存商品の仕様変更。改定内容（利率変更、保障内容変更等）を確認すること。", "reason": "キーワード一致: 「改定」"}, {"title": "『こだわり変額保険v2』を4月1日から改定 - 特別勘定の追加と新たな特定疾病保険料払込免除特約の追加", "company": "マニュライフ生命", "date": "2026/03/30", "url": "https://www.manulife.co.jp/content/dam/insurance/jp/documents/press/2026/0330.pdf", "category": "B", "cat_key": "B", "cat_label": "ニュースリリース", "score": 46.0, "score_detail": {"keyword": 18, "recency": 2.0, "ichiji": 0.0, "category": 10, "brand": 11}, "rank_label": "B", "popularity": 1, "product_type": "変額保険/年金", "action_type": "商品改定", "commentary": "[商品改定] 既存商品の仕様変更。改定内容（利率変更、保障内容変更等）を確認すること。 / 商品タイプ: 変額保険/年金 -運用実績により保険金額が変動する投資性の高い商品。市場リスクを顧客が負うため、適合性確認が特に重要。", "reason": "キーワード一致: 「改定」"}, {"title": "個人のお客様向けの事務・サービス変更とそれに伴うID規程改定について", "company": "日本生命", "date": "2026/03/06", "url": "https://www.nissay.co.jp/sites/default/files/assets/topics/files/20260306.pdf", "category": "A", "cat_key": "A", "cat_label": "お知らせ", "score": 45.0, "score_detail": {"keyword": 18, "recency": 2.0, "ichiji": 0.0, "category": 5, "brand": 15}, "rank_label": "B", "popularity": 1, "product_type": "", "action_type": "商品改定", "commentary": "[商品改定] 既存商品の仕様変更。改定内容（利率変更、保障内容変更等）を確認すること。", "reason": "キーワード一致: 「改定」"}, {"title": "国内生保業界初、第一生命がLBOローンのアレンジメント業務を開始～企業再編・事業承継を支える資金循環の高度化に貢献～", "company": "第一生命", "date": "2026/06/26", "url": "https://www.dai-ichi-life.co.jp/company/news/pdf/2026_012.pdf", "category": "B", "cat_key": "B", "cat_label": "ニュースリリース", "score": 45.0, "score_detail": {"keyword": 10, "recency": 5.0, "ichiji": 0.0, "category": 10, "brand": 15}, "rank_label": "B", "popularity": 2, "product_type": "", "action_type": "", "commentary": "ニュースリリース。事業活動に関する公式発表。", "reason": "キーワード一致: 「開始」"}, {"title": "企業の経営課題を多角的に支援する、一体的な非保険ソリューションの提供を開始―保険サービス業への変革に向けた提供価値の拡充―", "company": "第一生命", "date": "2026/06/23", "url": "https://www.dai-ichi-life.co.jp/company/news/pdf/2026_011.pdf", "category": "B", "cat_key": "B", "cat_label": "ニュースリリース", "score": 45.0, "score_detail": {"keyword": 10, "recency": 5.0, "ichiji": 0.0, "category": 10, "brand": 15}, "rank_label": "B", "popularity": 2, "product_type": "", "action_type": "", "commentary": "ニュースリリース。事業活動に関する公式発表。", "reason": "キーワード一致: 「開始」"}, {"title": "商品改定　ラインナップを増やしリニューアル！『ハイブリッド あんしん ライフ２プラス』", "company": "T&Dフィナンシャル生命", "date": "2026/03/30", "url": "https://www.tdf-life.co.jp/newsrelease/pdf/20260330.pdf", "category": "B", "cat_key": "B", "cat_label": "ニュースリリース", "score": 45.0, "score_detail": {"keyword": 20, "recency": 2.0, "ichiji": 0.0, "category": 10, "brand": 8}, "rank_label": "B", "popularity": 1, "product_type": "", "action_type": "商品改定", "commentary": "[商品改定] 既存商品の仕様変更。改定内容（利率変更、保障内容変更等）を確認すること。", "reason": "キーワード一致: 「改定」"}, {"title": "企業の人的資本経営を支援する「人的資本投資プラン」のバージョンアップについて", "company": "日本生命", "date": "2026/02/10", "url": "https://www.nissay.co.jp/kaisha/news/20260210.html", "category": "B", "cat_key": "B", "cat_label": "ニュースリリース", "score": 45.0, "score_detail": {"keyword": 18, "recency": 2.0, "ichiji": 0.0, "category": 10, "brand": 15}, "rank_label": "B", "popularity": 2, "product_type": "", "action_type": "商品リニューアル", "commentary": "[商品リニューアル] 既存商品の大幅な刷新。競合他社の類似商品と比較して優位性を確認。", "reason": "商品/サービス改定・開始に該当: 「バージョンアップ」"}, {"title": "インターネットサービス リニューアルのお知らせ", "company": "T&Dフィナンシャル生命", "date": "2026/02/02", "url": "https://www.tdf-life.co.jp/newsrelease/pdf/202602022.pdf", "category": "B", "cat_key": "B", "cat_label": "ニュースリリース", "score": 45.0, "score_detail": {"keyword": 20, "recency": 2.0, "ichiji": 0.0, "category": 10, "brand": 8}, "rank_label": "B", "popularity": 1, "product_type": "", "action_type": "商品リニューアル", "commentary": "[商品リニューアル] 既存商品の大幅な刷新。競合他社の類似商品と比較して優位性を確認。", "reason": "商品/サービス改定・開始に該当: 「リニューアル」"}, {"title": "メットライフとGlobal Citizen、ソーシャルメディアチャレンジ「Footwork for Futures」を開始教育、スポーツの機会拡大を目的とし、寄付金はすべて「FIFA Global Citizen教育基金」を通じて活用。メットライフ財団が拠出した900万ドルを基盤に", "company": "メットライフ生命", "date": "2026/05/13", "url": "https://www.metlife.co.jp/content/dam/metlifecom/jp/corp/pdf/about/press/2026/260513.pdf", "category": "C", "cat_key": "C", "cat_label": "プレスリリース", "score": 45.0, "score_detail": {"keyword": 10, "recency": 2.0, "ichiji": 0.0, "category": 15, "brand": 13}, "rank_label": "B", "popularity": 2, "product_type": "", "action_type": "", "commentary": "プレスリリース。メディア向けの公式発表で注目度が高い。", "reason": "キーワード一致: 「開始」"}, {"title": "米国メットライフとグローバル・シチズン、経済変革と持続可能な地域社会づくりに向けて提携FIFAグローバル・シチズン教育基金、世界中の地域団体から助成金申請を受付開始", "company": "メットライフ生命", "date": "2025/11/26", "url": "https://www.metlife.co.jp/content/dam/metlifecom/jp/corp/pdf/about/press/2025/251126.pdf", "category": "C", "cat_key": "C", "cat_label": "プレスリリース", "score": 45.0, "score_detail": {"keyword": 10, "recency": 2.0, "ichiji": 0.0, "category": 15, "brand": 13}, "rank_label": "B", "popularity": 2, "product_type": "", "action_type": "", "commentary": "注目: アライアンス", "reason": "キーワード一致: 「開始」"}, {"title": "第37回「創作四字熟語」募集開始 ～感じたことを漢字に託す2026～", "company": "住友生命", "date": "2026/09/02", "url": "https://www.sumitomolife.co.jp/news/detail/newsrelease_260902.html", "category": "A", "cat_key": "A", "cat_label": "お知らせ", "score": 44.0, "score_detail": {"keyword": 10, "recency": 15.0, "ichiji": 0.0, "category": 5, "brand": 14}, "rank_label": "C", "popularity": 1, "product_type": "", "action_type": "", "commentary": "一般的なお知らせ。内容を確認の上、必要に応じて対応。", "reason": "キーワード一致: 「開始」"}, {"title": "「サステナビリティ・ローン フレームワーク」の改定", "company": "太陽生命", "date": "2026/05/29", "url": "https://www.taiyo-seimei.co.jp/company/notice/pdf/press_article/2026/sauhdj00000002oz-att/20260529_1.pdf", "category": "B", "cat_key": "B", "cat_label": "ニュースリリース", "score": 44.0, "score_detail": {"keyword": 18, "recency": 2.0, "ichiji": 0.0, "category": 10, "brand": 9}, "rank_label": "C", "popularity": 1, "product_type": "", "action_type": "商品改定", "commentary": "[商品改定] 既存商品の仕様変更。改定内容（利率変更、保障内容変更等）を確認すること。 / 注目: サステナビリティ", "reason": "キーワード一致: 「改定」"}, {"title": "役員報酬制度の改定ならびに役員向け株式報酬制度の一部改定に関するお知らせ", "company": "太陽生命", "date": "2026/05/15", "url": "https://www.taiyo-seimei.co.jp/company/notice/pdf/press_article/2026/sauhdj000000028u-att/20260515_5.pdf", "category": "B", "cat_key": "B", "cat_label": "ニュースリリース", "score": 44.0, "score_detail": {"keyword": 18, "recency": 2.0, "ichiji": 0.0, "category": 10, "brand": 9}, "rank_label": "C", "popularity": 1, "product_type": "", "action_type": "商品改定", "commentary": "[商品改定] 既存商品の仕様変更。改定内容（利率変更、保障内容変更等）を確認すること。", "reason": "キーワード一致: 「改定」"}, {"title": "AIを活用した意思確認プロセスの支援に関する実証実験の開始について", "company": "日本生命", "date": "2026/08/05", "url": "https://www.nissay.co.jp/kaisha/news/20260805.html", "category": "B", "cat_key": "B", "cat_label": "ニュースリリース", "score": 43.0, "score_detail": {"keyword": 10, "recency": 8.0, "ichiji": 0.0, "category": 10, "brand": 15}, "rank_label": "C", "popularity": 2, "product_type": "", "action_type": "", "commentary": "注目: テクノロジー", "reason": "キーワード一致: 「開始」"}, {"title": "｢令和8年熊本地震｣の被災者の方々に対する各種特別取扱いについて", "company": "日本生命", "date": "2026/07/30", "url": "https://www.nissay.co.jp/kaisha/news/20260730.html", "category": "B", "cat_key": "B", "cat_label": "ニュースリリース", "score": 43.0, "score_detail": {"keyword": 10, "recency": 8.0, "ichiji": 0.0, "category": 10, "brand": 15}, "rank_label": "C", "popularity": 2, "product_type": "", "action_type": "", "commentary": "ニュースリリース。事業活動に関する公式発表。", "reason": "キーワード一致: 「取扱」"}, {"title": "役員報酬制度の改定ならびに役員向け株式報酬制度の一部改定に関するお知らせ", "company": "T&Dフィナンシャル生命", "date": "2026/05/15", "url": "https://www.tdf-life.co.jp/newsrelease/pdf/202605153.pdf", "category": "B", "cat_key": "B", "cat_label": "ニュースリリース", "score": 43.0, "score_detail": {"keyword": 18, "recency": 2.0, "ichiji": 0.0, "category": 10, "brand": 8}, "rank_label": "C", "popularity": 1, "product_type": "", "action_type": "商品改定", "commentary": "[商品改定] 既存商品の仕様変更。改定内容（利率変更、保障内容変更等）を確認すること。", "reason": "キーワード一致: 「改定」"}, {"title": "災害救助法適用地域の特別お取扱いについて", "company": "明治安田生命", "date": "2026/08/27", "url": "https://www.meijiyasuda.co.jp/profile/news/topics/disaster.html", "category": "A", "cat_key": "A", "cat_label": "お知らせ", "score": 42.0, "score_detail": {"keyword": 10, "recency": 13.0, "ichiji": 0.0, "category": 5, "brand": 14}, "rank_label": "C", "popularity": 1, "product_type": "", "action_type": "", "commentary": "一般的なお知らせ。内容を確認の上、必要に応じて対応。", "reason": "キーワード一致: 「取扱」"}, {"title": "「ＰＧＦ生命マイページ」利用規約改定のお知らせ", "company": "PGF生命", "date": "2026/08/10", "url": "https://www.pgf-life.co.jp/hpcms/news/NB300.do?NID=2058", "category": "A", "cat_key": "A", "cat_label": "お知らせ", "score": 42.0, "score_detail": {"keyword": 18, "recency": 11.0, "ichiji": 0.0, "category": 5, "brand": 8}, "rank_label": "C", "popularity": 1, "product_type": "", "action_type": "商品改定", "commentary": "[商品改定] 既存商品の仕様変更。改定内容（利率変更、保障内容変更等）を確認すること。", "reason": "キーワード一致: 「改定」"}, {"title": "オフィシャルホームページのリニューアルについて", "company": "日本生命", "date": "2025/11/14", "url": "https://www.nissay.co.jp/kaisha/topics/20251114_2.html", "category": "A", "cat_key": "A", "cat_label": "お知らせ", "score": 42.0, "score_detail": {"keyword": 20, "recency": 2.0, "ichiji": 0.0, "category": 5, "brand": 15}, "rank_label": "C", "popularity": 1, "product_type": "", "action_type": "商品リニューアル", "commentary": "[商品リニューアル] 既存商品の大幅な刷新。競合他社の類似商品と比較して優位性を確認。", "reason": "商品/サービス改定・開始に該当: 「リニューアル」"}, {"title": "｢令和８年熊本地震｣の被災者の方々に対する各種特別取扱いについて", "company": "大樹生命", "date": "2026/07/31", "url": "https://www.taiju-life.co.jp/corporate/news/pdf/20260731_1.pdf", "category": "B", "cat_key": "B", "cat_label": "ニュースリリース", "score": 42.0, "score_detail": {"keyword": 10, "recency": 8.0, "ichiji": 0.0, "category": 10, "brand": 9}, "rank_label": "C", "popularity": 1, "product_type": "", "action_type": "", "commentary": "ニュースリリース。事業活動に関する公式発表。", "reason": "キーワード一致: 「取扱」"}, {"title": "太陽生命少子高齢社会研究所、ＪＲ東日本と共同実証を開始", "company": "太陽生命", "date": "2026/07/10", "url": "https://www.taiyo-seimei.co.jp/company/notice/pdf/press_article/2026/sauhdj00000003ze-att/20260710_1.pdf", "category": "B", "cat_key": "B", "cat_label": "ニュースリリース", "score": 42.0, "score_detail": {"keyword": 10, "recency": 8.0, "ichiji": 0.0, "category": 10, "brand": 9}, "rank_label": "C", "popularity": 1, "product_type": "", "action_type": "", "commentary": "ニュースリリース。事業活動に関する公式発表。", "reason": "キーワード一致: 「開始」"}, {"title": "QOLism導入企業向けに「プレゼンティーイズム対策パッケージ」の提供を開始― 可視化から実行支援まで一体的にサポートし、健康経営の実効性向上に貢献 ―", "company": "第一生命", "date": "2026/04/01", "url": "https://www.dai-ichi-life.co.jp/company/news/pdf/2026_002.pdf", "category": "B", "cat_key": "B", "cat_label": "ニュースリリース", "score": 42.0, "score_detail": {"keyword": 10, "recency": 2.0, "ichiji": 0.0, "category": 10, "brand": 15}, "rank_label": "C", "popularity": 2, "product_type": "", "action_type": "", "commentary": "ニュースリリース。事業活動に関する公式発表。", "reason": "キーワード一致: 「開始」"}, {"title": "「都市の緑3表彰」の支援と募集開始および第一生命賞 特別企画『The Garden of Life』の実施", "company": "第一生命", "date": "2026/04/01", "url": "https://www.dai-ichi-life.co.jp/company/news/pdf/2026_001.pdf", "category": "B", "cat_key": "B", "cat_label": "ニュースリリース", "score": 42.0, "score_detail": {"keyword": 10, "recency": 2.0, "ichiji": 0.0, "category": 10, "brand": 15}, "rank_label": "C", "popularity": 2, "product_type": "", "action_type": "", "commentary": "ニュースリリース。事業活動に関する公式発表。", "reason": "キーワード一致: 「開始」"}, {"title": "第78回｢保健文化賞｣の募集開始について～より多くの方々にご応募いただけるよう、個人応募の年齢制限を撤廃～", "company": "第一生命", "date": "2026/02/02", "url": "https://www.dai-ichi-life.co.jp/company/news/pdf/2025_043.pdf", "category": "B", "cat_key": "B", "cat_label": "ニュースリリース", "score": 42.0, "score_detail": {"keyword": 10, "recency": 2.0, "ichiji": 0.0, "category": 10, "brand": 15}, "rank_label": "C", "popularity": 2, "product_type": "", "action_type": "", "commentary": "ニュースリリース。事業活動に関する公式発表。", "reason": "キーワード一致: 「開始」"}, {"title": "（訂正）日本生命保険相互会社による公開買付届出書の訂正届出書の提出に伴う公開買付開始公告の訂正に関するお知らせ", "company": "日本生命", "date": "2026/01/19", "url": "https://www.nissay.co.jp/sites/default/files/assets/news/files/20260119.pdf", "category": "B", "cat_key": "B", "cat_label": "ニュースリリース", "score": 42.0, "score_detail": {"keyword": 10, "recency": 2.0, "ichiji": 0.0, "category": 10, "brand": 15}, "rank_label": "C", "popularity": 2, "product_type": "", "action_type": "届出・認可", "commentary": "[届出・認可] 監督官庁への届出事項。今後の商品変更や販売開始の先行指標となる場合がある。", "reason": "キーワード一致: 「開始」"}, {"title": "日本生命保険相互会社によるメディカル・データ・ビジョン株式会社（証券コード：3902）の株券等に対する公開買付けの開始に関するお知らせ[825 KB]", "company": "日本生命", "date": "2025/12/15", "url": "https://www.nissay.co.jp/sites/default/files/assets/news/files/20251215.pdf", "category": "B", "cat_key": "B", "cat_label": "ニュースリリース", "score": 42.0, "score_detail": {"keyword": 10, "recency": 2.0, "ichiji": 0.0, "category": 10, "brand": 15}, "rank_label": "C", "popularity": 2, "product_type": "", "action_type": "", "commentary": "ニュースリリース。事業活動に関する公式発表。", "reason": "キーワード一致: 「開始」"}, {"title": "マイナポータル連携による健診情報デジタル提出サービスを開始！", "company": "第一生命", "date": "2025/10/29", "url": "https://www.dai-ichi-life.co.jp/company/news/pdf/2025_029.pdf", "category": "B", "cat_key": "B", "cat_label": "ニュースリリース", "score": 42.0, "score_detail": {"keyword": 10, "recency": 2.0, "ichiji": 0.0, "category": 10, "brand": 15}, "rank_label": "C", "popularity": 2, "product_type": "", "action_type": "", "commentary": "ニュースリリース。事業活動に関する公式発表。", "reason": "キーワード一致: 「開始」"}, {"title": "明治生命館1階・2階リニューアルオープン(展示エリア拡充、カフェ設置)のお知らせ", "company": "明治安田生命", "date": "2025/11/21", "url": "https://www.meijiyasuda.co.jp/profile/meiji-seimeikan/", "category": "A", "cat_key": "A", "cat_label": "お知らせ", "score": 41.0, "score_detail": {"keyword": 20, "recency": 2.0, "ichiji": 0.0, "category": 5, "brand": 14}, "rank_label": "C", "popularity": 1, "product_type": "", "action_type": "商品リニューアル", "commentary": "[商品リニューアル] 既存商品の大幅な刷新。競合他社の類似商品と比較して優位性を確認。", "reason": "商品/サービス改定・開始に該当: 「リニューアル」"}, {"title": "JLPGAオフィシャルパートナーCM(3篇)の放送開始について", "company": "明治安田生命", "date": "2026/03/19", "url": "https://www.meijiyasuda.co.jp/profile/news/release/2025/pdf/20260319_01.pdf", "category": "B", "cat_key": "B", "cat_label": "ニュースリリース", "score": 41.0, "score_detail": {"keyword": 10, "recency": 2.0, "ichiji": 0.0, "category": 10, "brand": 14}, "rank_label": "C", "popularity": 1, "product_type": "", "action_type": "", "commentary": "ニュースリリース。事業活動に関する公式発表。", "reason": "キーワード一致: 「開始」"}, {"title": "諸利率の改定について", "company": "ニッセイ・ウェルス生命", "date": "2026/01/30", "url": "https://www.nw-life.co.jp/news/info/pdf/i260130.pdf", "category": "A", "cat_key": "A", "cat_label": "お知らせ", "score": 40.0, "score_detail": {"keyword": 18, "recency": 2.0, "ichiji": 0.0, "category": 5, "brand": 10}, "rank_label": "C", "popularity": 1, "product_type": "", "action_type": "商品改定", "commentary": "[商品改定] 既存商品の仕様変更。改定内容（利率変更、保障内容変更等）を確認すること。", "reason": "キーワード一致: 「改定」"}, {"title": "「iPhoneのマイナンバーカード」を用いた新契約申込手続き時における本人確認の開始について", "company": "日本生命", "date": "2026/06/22", "url": "https://www.nissay.co.jp/kaisha/news/20260622.html", "category": "B", "cat_key": "B", "cat_label": "ニュースリリース", "score": 40.0, "score_detail": {"keyword": 10, "recency": 5.0, "ichiji": 0.0, "category": 10, "brand": 15}, "rank_label": "C", "popularity": 2, "product_type": "", "action_type": "", "commentary": "ニュースリリース。事業活動に関する公式発表。", "reason": "キーワード一致: 「開始」"}, {"title": "法人契約者向けWEBサービスご利用開始のお知らせ", "company": "メットライフ生命", "date": "2026/08/07", "url": "https://www.metlife.co.jp/about/info/2026/260807/", "category": "A", "cat_key": "A", "cat_label": "お知らせ", "score": 39.0, "score_detail": {"keyword": 10, "recency": 11.0, "ichiji": 0.0, "category": 5, "brand": 13}, "rank_label": "C", "popularity": 1, "product_type": "", "action_type": "", "commentary": "一般的なお知らせ。内容を確認の上、必要に応じて対応。", "reason": "キーワード一致: 「開始」"}, {"title": "【先進医療保障特約】等にご加入のお客さまへ(令和8年度診療報酬改定に伴うお知らせ)", "company": "明治安田生命", "date": "2026/06/01", "url": "https://www.meijiyasuda.co.jp/profile/news/topics/review_medical_fees_04.html", "category": "A", "cat_key": "A", "cat_label": "お知らせ", "score": 39.0, "score_detail": {"keyword": 18, "recency": 2.0, "ichiji": 0.0, "category": 5, "brand": 14}, "rank_label": "C", "popularity": 1, "product_type": "", "action_type": "商品改定", "commentary": "[商品改定] 既存商品の仕様変更。改定内容（利率変更、保障内容変更等）を確認すること。", "reason": "キーワード一致: 「改定」"}, {"title": "【退院後通院治療保障特約】等にご加入のお客さまへ(令和8年度診療報酬改定に伴うお知らせ)", "company": "明治安田生命", "date": "2026/06/01", "url": "https://www.meijiyasuda.co.jp/profile/news/topics/review_medical_fees_05.html", "category": "A", "cat_key": "A", "cat_label": "お知らせ", "score": 39.0, "score_detail": {"keyword": 18, "recency": 2.0, "ichiji": 0.0, "category": 5, "brand": 14}, "rank_label": "C", "popularity": 1, "product_type": "", "action_type": "商品改定", "commentary": "[商品改定] 既存商品の仕様変更。改定内容（利率変更、保障内容変更等）を確認すること。", "reason": "キーワード一致: 「改定」"}, {"title": "「平準払個人年金（外貨建）」2025年の生命保険料控除証明書の電子交付・再発行サービス開始について", "company": "ニッセイ・ウェルス生命", "date": "2025/10/14", "url": "https://www.nw-life.co.jp/news/info/i251015.html", "category": "A", "cat_key": "A", "cat_label": "お知らせ", "score": 39.0, "score_detail": {"keyword": 10, "recency": 2.0, "ichiji": 12.0, "category": 5, "brand": 10}, "rank_label": "C", "popularity": 2, "product_type": "外貨建保険", "action_type": "", "commentary": "商品タイプ: 外貨建保険 -為替リスクがあるが円建より高い利回りが期待できる。銀行窓販では根強い人気がある一方、為替変動リスクの説明義務が重要。", "reason": "キーワード一致: 「開始」"}, {"title": "インパクト投資の開始について", "company": "ソニー生命", "date": "2026/04/22", "url": "https://www.sonylife.co.jp/company/news/2026/files/260422_impact.pdf", "category": "B", "cat_key": "B", "cat_label": "ニュースリリース", "score": 39.0, "score_detail": {"keyword": 10, "recency": 2.0, "ichiji": 0.0, "category": 10, "brand": 12}, "rank_label": "C", "popularity": 1, "product_type": "", "action_type": "", "commentary": "ニュースリリース。事業活動に関する公式発表。", "reason": "キーワード一致: 「開始」"}, {"title": "東京大学IOGとの共同研究 ソニー生命「生きがい白書プロジェクト」を開始～「生きがい」の実態や人生へ与える影響を探り、より豊かな人生・社会の実現へ～", "company": "ソニー生命", "date": "2025/11/05", "url": "https://www.sonylife.co.jp/company/news/2025/files/251105_ikigaihakusyo.pdf", "category": "B", "cat_key": "B", "cat_label": "ニュースリリース", "score": 39.0, "score_detail": {"keyword": 10, "recency": 2.0, "ichiji": 0.0, "category": 10, "brand": 12}, "rank_label": "C", "popularity": 1, "product_type": "", "action_type": "", "commentary": "ニュースリリース。事業活動に関する公式発表。", "reason": "キーワード一致: 「開始」"}, {"title": "松坂大輔さん×小笠原道大さん対談番組「本音。野球という名の\"生きがい\"」を10月14日（火）よりパーソル パ・リーグTVにて配信開始！", "company": "ソニー生命", "date": "2025/10/14", "url": "https://www.sonylife.co.jp/company/news/2025/files/251014_ptv.pdf", "category": "B", "cat_key": "B", "cat_label": "ニュースリリース", "score": 39.0, "score_detail": {"keyword": 10, "recency": 2.0, "ichiji": 0.0, "category": 10, "brand": 12}, "rank_label": "C", "popularity": 1, "product_type": "", "action_type": "", "commentary": "ニュースリリース。事業活動に関する公式発表。", "reason": "キーワード一致: 「開始」"}, {"title": "新CM “ニッセイサステナプロジェクト「健康を守る」篇”  8月2日（日）より放映開始", "company": "日本生命", "date": "2026/07/31", "url": "https://www.nissay.co.jp/kaisha/topics/20260731.html", "category": "A", "cat_key": "A", "cat_label": "お知らせ", "score": 38.0, "score_detail": {"keyword": 10, "recency": 8.0, "ichiji": 0.0, "category": 5, "brand": 15}, "rank_label": "C", "popularity": 1, "product_type": "", "action_type": "", "commentary": "注目: サステナビリティ", "reason": "キーワード一致: 「開始」"}, {"title": "「令和8年熊本地震」の被災者の方々に対する各種特別取扱いについて", "company": "ニッセイ・ウェルス生命", "date": "2026/07/31", "url": "https://www.nw-life.co.jp/news/n260731.pdf", "category": "A", "cat_key": "A", "cat_label": "お知らせ", "score": 38.0, "score_detail": {"keyword": 10, "recency": 8.0, "ichiji": 0.0, "category": 5, "brand": 10}, "rank_label": "C", "popularity": 1, "product_type": "", "action_type": "", "commentary": "一般的なお知らせ。内容を確認の上、必要に応じて対応。", "reason": "キーワード一致: 「取扱」"}, {"title": "「ニッセイ・ふるさと寄付型ローン～Kifunomy～」の取扱い開始について", "company": "日本生命", "date": "2026/05/01", "url": "https://www.nissay.co.jp/kaisha/news/20260501.html", "category": "B", "cat_key": "B", "cat_label": "ニュースリリース", "score": 37.0, "score_detail": {"keyword": 10, "recency": 2.0, "ichiji": 0.0, "category": 10, "brand": 15}, "rank_label": "C", "popularity": 2, "product_type": "", "action_type": "", "commentary": "ニュースリリース。事業活動に関する公式発表。", "reason": "キーワード一致: 「取扱」"}, {"title": "マイナンバーカードを活用した新サービス「大樹らくらく手続きナビ」の開始について", "company": "大樹生命", "date": "2026/04/03", "url": "https://www.taiju-life.co.jp/corporate/news/pdf/20260403_1.pdf", "category": "B", "cat_key": "B", "cat_label": "ニュースリリース", "score": 36.0, "score_detail": {"keyword": 10, "recency": 2.0, "ichiji": 0.0, "category": 10, "brand": 9}, "rank_label": "C", "popularity": 1, "product_type": "", "action_type": "", "commentary": "ニュースリリース。事業活動に関する公式発表。", "reason": "キーワード一致: 「開始」"}, {"title": "太陽生命と新潟縣信用組合、生命保険の共同募集を開始", "company": "太陽生命", "date": "2026/03/31", "url": "https://www.taiyo-seimei.co.jp/company/notice/pdf/press_article/2025/sauhdj00000001cp-att/20260331_2.pdf", "category": "B", "cat_key": "B", "cat_label": "ニュースリリース", "score": 36.0, "score_detail": {"keyword": 10, "recency": 2.0, "ichiji": 0.0, "category": 10, "brand": 9}, "rank_label": "C", "popularity": 1, "product_type": "", "action_type": "", "commentary": "ニュースリリース。事業活動に関する公式発表。", "reason": "キーワード一致: 「開始」"}, {"title": "太陽生命と益田信用組合、生命保険の共同募集を開始", "company": "太陽生命", "date": "2026/02/27", "url": "https://www.taiyo-seimei.co.jp/company/notice/pdf/press_article/2025/sauhdj00000000pp-att/20260227_3.pdf", "category": "B", "cat_key": "B", "cat_label": "ニュースリリース", "score": 36.0, "score_detail": {"keyword": 10, "recency": 2.0, "ichiji": 0.0, "category": 10, "brand": 9}, "rank_label": "C", "popularity": 1, "product_type": "", "action_type": "", "commentary": "ニュースリリース。事業活動に関する公式発表。", "reason": "キーワード一致: 「開始」"}, {"title": "住友生命子育て支援事業第20回「スミセイ未来を強くする子育てプロジェクト」募集開始", "company": "住友生命", "date": "2026/07/03", "url": "https://www.sumitomolife.co.jp/news/detail/newsrelease_260703.html", "category": "A", "cat_key": "A", "cat_label": "お知らせ", "score": 34.0, "score_detail": {"keyword": 10, "recency": 5.0, "ichiji": 0.0, "category": 5, "brand": 14}, "rank_label": "C", "popularity": 1, "product_type": "", "action_type": "", "commentary": "一般的なお知らせ。内容を確認の上、必要に応じて対応。", "reason": "キーワード一致: 「開始」"}, {"title": "ショートメッセージ（SMS）によるお手続完了通知の開始について", "company": "ソニー生命", "date": "2026/03/11", "url": "https://www.sonylife.co.jp/info/pdf/260311_oshirase.pdf", "category": "A", "cat_key": "A", "cat_label": "お知らせ", "score": 34.0, "score_detail": {"keyword": 10, "recency": 2.0, "ichiji": 0.0, "category": 5, "brand": 12}, "rank_label": "C", "popularity": 1, "product_type": "", "action_type": "", "commentary": "一般的なお知らせ。内容を確認の上、必要に応じて対応。", "reason": "キーワード一致: 「開始」"}, {"title": "「プライマリー生命マイページ」の請求手続き機能の拡充およびボイスボットによる自動音声応対開始のお知らせ", "company": "三井住友海上プライマリー生命", "date": "2025/12/19", "url": "https://www.ms-primary.com/news/info/assets/20251219_mypagevoicebot.pdf", "category": "A", "cat_key": "A", "cat_label": "お知らせ", "score": 34.0, "score_detail": {"keyword": 10, "recency": 2.0, "ichiji": 0.0, "category": 5, "brand": 12}, "rank_label": "C", "popularity": 1, "product_type": "", "action_type": "", "commentary": "一般的なお知らせ。内容を確認の上、必要に応じて対応。", "reason": "キーワード一致: 「開始」"}, {"title": "「保険契約者代理特約」の取扱い開始のお知らせ", "company": "三井住友海上プライマリー生命", "date": "2025/10/01", "url": "https://www.ms-primary.com/news/info/assets/20251001_keiyakushadairi.pdf", "category": "A", "cat_key": "A", "cat_label": "お知らせ", "score": 34.0, "score_detail": {"keyword": 10, "recency": 2.0, "ichiji": 0.0, "category": 5, "brand": 12}, "rank_label": "C", "popularity": 1, "product_type": "", "action_type": "", "commentary": "一般的なお知らせ。内容を確認の上、必要に応じて対応。", "reason": "キーワード一致: 「取扱」"}, {"title": "生命保険料控除証明書の電子交付開始のお知らせ", "company": "三井住友海上プライマリー生命", "date": "2025/10/01", "url": "https://www.ms-primary.com/news/info/assets/20251001_kojyoshomei.pdf", "category": "A", "cat_key": "A", "cat_label": "お知らせ", "score": 34.0, "score_detail": {"keyword": 10, "recency": 2.0, "ichiji": 0.0, "category": 5, "brand": 12}, "rank_label": "C", "popularity": 1, "product_type": "", "action_type": "", "commentary": "一般的なお知らせ。内容を確認の上、必要に応じて対応。", "reason": "キーワード一致: 「開始」"}, {"title": "「ＰＧＦ生命マイページ」利用規約改定のお知らせ", "company": "PGF生命", "date": "2026/06/01", "url": "https://www.pgf-life.co.jp/hpcms/news/NB300.do?NID=2050", "category": "A", "cat_key": "A", "cat_label": "お知らせ", "score": 33.0, "score_detail": {"keyword": 18, "recency": 2.0, "ichiji": 0.0, "category": 5, "brand": 8}, "rank_label": "C", "popularity": 1, "product_type": "", "action_type": "商品改定", "commentary": "[商品改定] 既存商品の仕様変更。改定内容（利率変更、保障内容変更等）を確認すること。", "reason": "キーワード一致: 「改定」"}, {"title": "Osaka Life Science Nexus における「Global Startup EXPO 2026」への協力について", "company": "日本生命", "date": "2026/07/29", "url": "https://www.nissay.co.jp/kaisha/news/20260729.html", "category": "B", "cat_key": "B", "cat_label": "ニュースリリース", "score": 33.0, "score_detail": {"keyword": 0.0, "recency": 8.0, "ichiji": 0.0, "category": 10, "brand": 15}, "rank_label": "C", "popularity": 2, "product_type": "", "action_type": "", "commentary": "ニュースリリース。事業活動に関する公式発表。", "reason": "キーワード一致: 「start」"}, {"title": "“日本生命セ・パ交流戦2026”新CMの放映開始について", "company": "日本生命", "date": "2026/05/25", "url": "https://www.nissay.co.jp/kaisha/topics/20260525.html", "category": "A", "cat_key": "A", "cat_label": "お知らせ", "score": 32.0, "score_detail": {"keyword": 10, "recency": 2.0, "ichiji": 0.0, "category": 5, "brand": 15}, "rank_label": "C", "popularity": 1, "product_type": "", "action_type": "", "commentary": "一般的なお知らせ。内容を確認の上、必要に応じて対応。", "reason": "キーワード一致: 「開始」"}, {"title": "新CM「Play,Support.『スポーツが教えてくれた』篇」の放映開始について", "company": "日本生命", "date": "2026/02/06", "url": "https://www.nissay.co.jp/kaisha/topics/20260206_2.html", "category": "A", "cat_key": "A", "cat_label": "お知らせ", "score": 32.0, "score_detail": {"keyword": 10, "recency": 2.0, "ichiji": 0.0, "category": 5, "brand": 15}, "rank_label": "C", "popularity": 1, "product_type": "", "action_type": "", "commentary": "一般的なお知らせ。内容を確認の上、必要に応じて対応。", "reason": "キーワード一致: 「開始」"}, {"title": "災害救助法適用地域の特別取扱いについて", "company": "マニュライフ生命", "date": "2025/12/23", "url": "https://www.manulife.co.jp/ja/policyholder/rescue.html", "category": "A", "cat_key": "A", "cat_label": "お知らせ", "score": 28.0, "score_detail": {"keyword": 10, "recency": 2.0, "ichiji": 0.0, "category": 5, "brand": 11}, "rank_label": "D", "popularity": 1, "product_type": "", "action_type": "", "commentary": "一般的なお知らせ。内容を確認の上、必要に応じて対応。", "reason": "キーワード一致: 「取扱」"}, {"title": "災害救助法適用地域の特別取扱いについて（鳥取県）", "company": "マニュライフ生命", "date": "2025/12/12", "url": "https://www.manulife.co.jp/ja/policyholder/rescue.html", "category": "A", "cat_key": "A", "cat_label": "お知らせ", "score": 28.0, "score_detail": {"keyword": 10, "recency": 2.0, "ichiji": 0.0, "category": 5, "brand": 11}, "rank_label": "D", "popularity": 1, "product_type": "", "action_type": "", "commentary": "一般的なお知らせ。内容を確認の上、必要に応じて対応。", "reason": "キーワード一致: 「取扱」"}, {"title": "災害救助法適用地域の特別取扱いについて（石川県等）", "company": "マニュライフ生命", "date": "2025/10/03", "url": "https://www.manulife.co.jp/ja/policyholder/rescue.html", "category": "A", "cat_key": "A", "cat_label": "お知らせ", "score": 28.0, "score_detail": {"keyword": 10, "recency": 2.0, "ichiji": 0.0, "category": 5, "brand": 11}, "rank_label": "D", "popularity": 1, "product_type": "", "action_type": "", "commentary": "一般的なお知らせ。内容を確認の上、必要に応じて対応。", "reason": "キーワード一致: 「取扱」"}];
+var HEALTH = {"generated_at": "2026/09/06 03:47", "summary": {"total": 15, "ok": 13, "warning": 0, "error": 2}, "companies": [{"key": "アフラック生命", "name": "アフラック生命", "level": "ERROR", "raw_count": 0, "filter_count": 0, "errors": [], "message": "スクレイピング0件 - サイト構造変更・WAFブロックの可能性"}, {"key": "オリックス生命", "name": "オリックス生命", "level": "ERROR", "raw_count": 0, "filter_count": 0, "errors": [], "message": "スクレイピング0件 - サイト構造変更・WAFブロックの可能性"}, {"key": "PGF生命", "name": "PGF生命", "level": "OK", "raw_count": 10, "filter_count": 2, "errors": [], "message": "正常: 2件取得"}, {"key": "T&Dフィナンシャル生命", "name": "T&Dフィナンシャル生命", "level": "OK", "raw_count": 30, "filter_count": 4, "errors": [], "message": "正常: 4件取得"}, {"key": "ソニー生命", "name": "ソニー生命", "level": "OK", "raw_count": 137, "filter_count": 9, "errors": [], "message": "正常: 9件取得"}, {"key": "ニッセイ・ウェルス生命", "name": "ニッセイ・ウェルス生命", "level": "OK", "raw_count": 690, "filter_count": 7, "errors": [], "message": "正常: 7件取得"}, {"key": "マニュライフ生命", "name": "マニュライフ生命", "level": "OK", "raw_count": 71, "filter_count": 8, "errors": [], "message": "正常: 8件取得"}, {"key": "メットライフ生命", "name": "メットライフ生命", "level": "OK", "raw_count": 540, "filter_count": 9, "errors": [], "message": "正常: 9件取得"}, {"key": "三井住友海上プライマリー生命", "name": "三井住友海上プライマリー生命", "level": "OK", "raw_count": 44, "filter_count": 6, "errors": [], "message": "正常: 6件取得"}, {"key": "住友生命", "name": "住友生命", "level": "OK", "raw_count": 20, "filter_count": 7, "errors": [], "message": "正常: 7件取得"}, {"key": "大樹生命", "name": "大樹生命", "level": "OK", "raw_count": 20, "filter_count": 2, "errors": [], "message": "正常: 2件取得"}, {"key": "太陽生命", "name": "太陽生命", "level": "OK", "raw_count": 365, "filter_count": 16, "errors": [], "message": "正常: 16件取得"}, {"key": "日本生命", "name": "日本生命", "level": "OK", "raw_count": 1061, "filter_count": 20, "errors": [], "message": "正常: 20件取得"}, {"key": "明治安田生命", "name": "明治安田生命", "level": "OK", "raw_count": 150, "filter_count": 11, "errors": [], "message": "正常: 11件取得"}, {"key": "第一生命", "name": "第一生命", "level": "OK", "raw_count": 75, "filter_count": 12, "errors": [], "message": "正常: 12件取得"}]};
+var currentPage = 'ranking';
+var GH_CONFIG = {"owner": "aikoshohin-hash", "repo": "insurance-release-dashboard", "enabled": true};
+var NEW_DAYS = 3; // 新着とみなす日数
+
+// 日付パース
+function parseDate(s){
+  if(!s) return null;
+  var m = s.match(/(\d{4})\D+(\d{1,2})\D+(\d{1,2})/);
+  if(m) return new Date(parseInt(m[1]),parseInt(m[2])-1,parseInt(m[3]));
+  return null;
+}
+
+// 新着判定
+function isNew(e){
+  var d = parseDate(e.date);
+  if(!d) return false;
+  var now = new Date();
+  now.setHours(0,0,0,0);
+  var diff = (now - d) / (1000*60*60*24);
+  return diff <= NEW_DAYS;
+}
+
+// DATA各エントリに _isNew フラグを付与
+DATA.forEach(function(e){ e._isNew = isNew(e); });
+
+// 初期化
+(function init(){
+  var cs = {};
+  DATA.forEach(function(e){ cs[e.company]=1; });
+  var sel = document.getElementById('fCompany');
+  sel.innerHTML = '<option value="">全会社</option>';
+  Object.keys(cs).sort().forEach(function(c){
+    var o = document.createElement('option');
+    o.value=c; o.textContent=c; sel.appendChild(o);
+  });
+  updateMetrics();
+  refresh();
+})();
+
+function updateMetrics(){
+  document.getElementById('m-total').textContent = DATA.length;
+  var s=0; DATA.forEach(function(e){ if(e.rank_label==='S') s++; });
+  document.getElementById('m-srank').textContent = s;
+  var sum=0; DATA.forEach(function(e){ sum+=e.score||0; });
+  document.getElementById('m-avg').textContent = DATA.length? (sum/DATA.length).toFixed(1) : '0';
+  // 新着カウント
+  var nw=0; DATA.forEach(function(e){ if(e._isNew) nw++; });
+  document.getElementById('m-new').textContent = nw;
+  document.getElementById('m-new-sub').textContent = nw>0 ? 'NEW!' : '-';
+  document.getElementById('nc-all').textContent = DATA.length;
+  ['A','B','C'].forEach(function(c){
+    var n=0; DATA.forEach(function(e){ if(e.cat_key===c) n++; });
+    document.getElementById('nc-'+c).textContent = n;
+  });
+}
+
+function getFiltered(catKey){
+  var q = document.getElementById('search').value.toLowerCase();
+  var r = document.getElementById('fRank').value;
+  var c = document.getElementById('fCompany').value;
+  var nOnly = document.getElementById('fNewOnly').checked;
+  var result = DATA.filter(function(e){
+    if(catKey && e.cat_key !== catKey) return false;
+    if(r && e.rank_label !== r) return false;
+    if(c && e.company !== c) return false;
+    if(nOnly && !e._isNew) return false;
+    if(q){
+      var t = (e.title||'')+(e.company||'')+(e.commentary||'')+(e.product_type||'');
+      if(t.toLowerCase().indexOf(q)===-1) return false;
+    }
+    return true;
+  });
+  // 新着を上に、その中でスコア降順
+  result.sort(function(a,b){
+    if(a._isNew !== b._isNew) return a._isNew ? -1 : 1;
+    return (b.score||0) - (a.score||0);
+  });
+  return result;
+}
+
+function esc(s){ var d=document.createElement('div'); d.textContent=s||''; return d.innerHTML; }
+function stars(n){ return '\u2605'.repeat(n)+'\u2606'.repeat(5-n); }
+function rc(r){ return {S:'var(--rank-s)',A:'var(--rank-a)',B:'var(--rank-b)',C:'var(--rank-c)',D:'var(--rank-d)'}[r]||'var(--rank-d)'; }
+
+function buildTable(entries, title){
+  if(!entries.length) return '<div class="table-wrap"><div class="section-title">'+esc(title)+'</div><div style="padding:40px;text-align:center;color:var(--text-light)">該当データなし</div></div>';
+  var newCount = entries.filter(function(e){return e._isNew;}).length;
+  var titleSuffix = newCount>0 ? ' ('+entries.length+'件 / 新着'+newCount+'件)' : ' ('+entries.length+'件)';
+  var h = '<div class="table-wrap"><div class="section-title">'+esc(title)+titleSuffix+'</div>';
+  h += '<div style="overflow-x:auto"><table><thead><tr>';
+  h += '<th>ランク</th><th>スコア</th><th>人気度</th><th>会社名</th><th>日付</th><th>見出し</th>';
+  h += '</tr></thead><tbody>';
+  var shownDivider = false;
+  entries.forEach(function(e,i){
+    // 新着と既存の区切り線
+    if(!shownDivider && !e._isNew && newCount>0){
+      h += '<tr><td colspan="6" class="new-divider">&#9660; 以前のニュース</td></tr>';
+      shownDivider = true;
+    }
+    var id = currentPage+'_'+i;
+    var url = e.url||'';
+    var tHtml = url ? '<a href="'+url+'" target="_blank" rel="noopener">'+esc(e.title)+'</a>' : esc(e.title);
+    var newBadge = e._isNew ? '<span class="badge-new">NEW</span>' : '';
+    var tags = '';
+    if(e.product_type) tags += '<span class="tag">'+esc(e.product_type)+'</span>';
+    if(e.action_type) tags += '<span class="tag">'+esc(e.action_type)+'</span>';
+    if(e.cat_label) tags += '<span class="tag">'+esc(e.cat_label)+'</span>';
+    h += '<tr onclick="toggle(\''+id+'\')" class="'+(e._isNew?'row-new':'')+'">';
+    h += '<td class="rank-cell rank-'+e.rank_label+'">'+e.rank_label+'</td>';
+    h += '<td class="score-cell">'+e.score+'</td>';
+    h += '<td class="stars-cell">'+stars(e.popularity||1)+'</td>';
+    h += '<td class="company-cell">'+esc(e.company)+'</td>';
+    h += '<td class="date-cell">'+esc(e.date)+'</td>';
+    h += '<td class="title-cell">'+tHtml+newBadge+(tags?' <br>'+tags:'')+'</td>';
+    h += '</tr>';
+    // detail row
+    var d = e.score_detail||{};
+    h += '<tr class="detail-tr"><td colspan="6"><div class="detail-content" id="d-'+id+'">';
+    h += '<div class="detail-grid"><div class="commentary">';
+    if(e.commentary) h += '<strong>コメンタリー:</strong> '+esc(e.commentary)+'<br>';
+    if(e.reason) h += '<strong>抽出理由:</strong> '+esc(e.reason);
+    h += '</div><div class="score-breakdown">';
+    h += '<div style="font-weight:600;font-size:0.78rem;margin-bottom:4px">スコア内訳</div>';
+    h += sbRow('キーワード',d.keyword||0,30);
+    h += sbRow('鮮度',d.recency||0,15);
+    h += sbRow('一時払い',d.ichiji||0,15);
+    h += sbRow('カテゴリ',d.category||0,15);
+    h += sbRow('ブランド',d.brand||0,15);
+    h += '</div></div></div></td></tr>';
+  });
+  h += '</tbody></table></div></div>';
+  return h;
+}
+
+function sbRow(label,val,max){
+  var pct = Math.min(100,(val/max)*100);
+  return '<div class="sb-row"><div class="sb-label">'+label+'</div><div class="sb-track"><div class="sb-fill" style="width:'+pct+'%"></div></div><div class="sb-val">'+val+'</div></div>';
+}
+
+function toggle(id){
+  var el = document.getElementById('d-'+id);
+  if(el) el.classList.toggle('open');
+}
+
+function refresh(){
+  document.getElementById('page-ranking').innerHTML = buildTable(getFiltered(null), '総合ランキング');
+  document.getElementById('page-catA').innerHTML = buildTable(getFiltered('A'), 'カテゴリA: お知らせ');
+  document.getElementById('page-catB').innerHTML = buildTable(getFiltered('B'), 'カテゴリB: ニュースリリース');
+  document.getElementById('page-catC').innerHTML = buildTable(getFiltered('C'), 'カテゴリC: プレスリリース');
+  renderCharts();
+  renderHealth();
+  // ヘルスアラートバッジ
+  var errCnt = (HEALTH.summary.error||0) + (HEALTH.summary.warning||0);
+  var badge = document.getElementById('nc-alert');
+  if(badge){
+    if(errCnt > 0){ badge.textContent=errCnt; badge.style.display='inline-block'; }
+    else { badge.style.display='none'; }
+  }
+}
+
+function go(page){
+  currentPage = page;
+  ['ranking','catA','catB','catC','charts','health'].forEach(function(p){
+    document.getElementById('page-'+p).style.display = p===page?'block':'none';
+  });
+  document.querySelectorAll('.nav-item').forEach(function(el,i){
+    el.classList.remove('active');
+  });
+  if(event && event.target) event.target.classList.add('active');
+  if(page==='charts') renderCharts();
+  if(page==='health') renderHealth();
+  // モバイル: サイドバー閉じる
+  document.getElementById('sidebar').classList.remove('open');
+  document.getElementById('overlay').classList.remove('show');
+  window.scrollTo(0,0);
+}
+
+function renderHealth(){
+  var el = document.getElementById('page-health');
+  if(!el) return;
+  var h = '<div class="section"><div class="section-header">🔔 取得ステータス</div>';
+  h += '<p style="font-size:0.85rem;color:var(--text-light);margin-bottom:16px">最終チェック: '+esc(HEALTH.generated_at||'—')+'</p>';
+
+  // サマリーカード
+  var s = HEALTH.summary||{};
+  h += '<div style="display:flex;gap:12px;flex-wrap:wrap;margin-bottom:20px">';
+  h += healthCard('✅ 正常', s.ok||0, '#21c354');
+  h += healthCard('⚠️ データなし', s.warning||0, '#ffa62b');
+  h += healthCard('❌ 取得エラー', s.error||0, '#ff4b4b');
+  h += '</div>';
+
+  // 会社別テーブル
+  h += '<table style="width:100%;border-collapse:collapse;font-size:0.85rem">';
+  h += '<thead><tr style="background:#f0f2f6">';
+  ['会社名','取得件数','抽出件数','状態','メッセージ'].forEach(function(col){
+    h += '<th style="padding:8px 12px;text-align:left;font-weight:600">'+col+'</th>';
+  });
+  h += '</tr></thead><tbody>';
+
+  var companies = HEALTH.companies||[];
+  // ERROR→WARNING→OKの順
+  var order = {ERROR:0,WARNING:1,OK:2};
+  companies.slice().sort(function(a,b){return (order[a.level]||9)-(order[b.level]||9);}).forEach(function(c,i){
+    var bg = i%2===0?'#fff':'#fafafa';
+    var badge = c.level==='ERROR'
+      ? '<span style="background:#ff4b4b;color:#fff;padding:2px 8px;border-radius:4px;font-size:0.75rem">ERROR</span>'
+      : c.level==='WARNING'
+      ? '<span style="background:#ffa62b;color:#fff;padding:2px 8px;border-radius:4px;font-size:0.75rem">WARNING</span>'
+      : '<span style="background:#21c354;color:#fff;padding:2px 8px;border-radius:4px;font-size:0.75rem">OK</span>';
+    h += '<tr style="background:'+bg+';border-bottom:1px solid #e6e9ef">';
+    h += '<td style="padding:8px 12px;font-weight:500">'+esc(c.name)+'</td>';
+    h += '<td style="padding:8px 12px;text-align:right">'+c.raw_count+'</td>';
+    h += '<td style="padding:8px 12px;text-align:right">'+c.filter_count+'</td>';
+    h += '<td style="padding:8px 12px">'+badge+'</td>';
+    h += '<td style="padding:8px 12px;color:var(--text-light)">'+esc(c.message)+'</td>';
+    h += '</tr>';
+    // エラー詳細
+    if(c.errors && c.errors.length){
+      h += '<tr style="background:#fff5f5"><td colspan="5" style="padding:4px 24px;font-size:0.78rem;color:#cc0000">';
+      c.errors.forEach(function(e){ h += '└ '+esc(e)+'<br>'; });
+      h += '</td></tr>';
+    }
+  });
+  h += '</tbody></table></div>';
+  el.innerHTML = h;
+}
+
+function healthCard(label, count, color){
+  return '<div style="background:#fff;border:1px solid '+color+';border-radius:8px;padding:12px 20px;min-width:120px;text-align:center">'
+    + '<div style="font-size:1.4rem;font-weight:700;color:'+color+'">'+count+'</div>'
+    + '<div style="font-size:0.8rem;color:var(--text-light)">'+label+'</div>'
+    + '</div>';
+}
+
+function toggleSidebar(){
+  document.getElementById('sidebar').classList.toggle('open');
+  document.getElementById('overlay').classList.toggle('show');
+}
+
+function renderCharts(){
+  var el = document.getElementById('page-charts');
+  // ランク分布
+  var rd={}; ['S','A','B','C','D'].forEach(function(r){rd[r]=0;});
+  DATA.forEach(function(e){rd[e.rank_label]=(rd[e.rank_label]||0)+1;});
+  var mxR=Math.max.apply(null,Object.values(rd).concat([1]));
+  var colors = {S:'var(--rank-s)',A:'var(--rank-a)',B:'var(--rank-b)',C:'var(--rank-c)',D:'var(--rank-d)'};
+
+  // 会社別
+  var cd={}; DATA.forEach(function(e){cd[e.company]=(cd[e.company]||0)+1;});
+  var cs=Object.entries(cd).sort(function(a,b){return b[1]-a[1];});
+  var mxC=Math.max.apply(null,cs.map(function(x){return x[1];}).concat([1]));
+
+  // 会社別平均
+  var ca={}; DATA.forEach(function(e){if(!ca[e.company])ca[e.company]=[];ca[e.company].push(e.score||0);});
+  var av=Object.entries(ca).map(function(x){return[x[0],x[1].reduce(function(a,b){return a+b;},0)/x[1].length];}).sort(function(a,b){return b[1]-a[1];});
+  var mxA=Math.max.apply(null,av.map(function(x){return x[1];}).concat([1]));
+
+  // 商品タイプ
+  var pd={}; DATA.forEach(function(e){if(e.product_type)pd[e.product_type]=(pd[e.product_type]||0)+1;});
+  var ps=Object.entries(pd).sort(function(a,b){return b[1]-a[1];});
+  var mxP=Math.max.apply(null,ps.map(function(x){return x[1];}).concat([1]));
+
+  var h = '<div class="charts-grid">';
+  h += '<div class="chart-card"><h3>ランク分布</h3><div class="hbar">';
+  ['S','A','B','C','D'].forEach(function(r){
+    h += hbar(r+' ランク',rd[r],mxR,colors[r]);
+  });
+  h += '</div></div>';
+
+  h += '<div class="chart-card"><h3>会社別リリース数</h3><div class="hbar">';
+  cs.forEach(function(x){ h += hbar(x[0],x[1],mxC,'var(--primary-light)'); });
+  h += '</div></div>';
+
+  h += '<div class="chart-card"><h3>会社別 平均スコア</h3><div class="hbar">';
+  av.forEach(function(x){ h += hbar(x[0],x[1].toFixed(1),mxA,'var(--rank-b)'); });
+  h += '</div></div>';
+
+  h += '<div class="chart-card"><h3>商品タイプ分布</h3><div class="hbar">';
+  if(ps.length){ ps.forEach(function(x){ h += hbar(x[0],x[1],mxP,'var(--rank-a)'); }); }
+  else { h += '<div style="color:var(--text-light);text-align:center;padding:20px">該当データなし</div>'; }
+  h += '</div></div></div>';
+
+  el.innerHTML = h;
+}
+
+function hbar(label,val,max,color){
+  var pct=Math.min(100,(parseFloat(val)/max)*100);
+  return '<div class="hbar-row"><div class="hbar-label">'+esc(label)+'</div><div class="hbar-track"><div class="hbar-fill" style="width:'+pct+'%;background:'+color+'"></div></div><div class="hbar-val">'+val+'</div></div>';
+}
+
+// === GitHub Actions データ更新 ===
+(function initGH(){
+  if(!GH_CONFIG.enabled) return;
+  // Excelダウンロードリンク表示
+  var dl = document.getElementById('btnDownload');
+  if(dl) dl.style.display = 'flex';
+  // GitHub Actionsリンク
+  var gh = document.getElementById('ghLink');
+  if(gh){
+    gh.href = 'https://github.com/'+GH_CONFIG.owner+'/'+GH_CONFIG.repo+'/actions';
+    gh.style.display = 'block';
+  }
+})();
+
+function triggerRefresh(){
+  var btn = document.getElementById('btnRefresh');
+  var st = document.getElementById('refreshStatus');
+
+  if(!GH_CONFIG.enabled || !GH_CONFIG.pat){
+    // PATがない場合: GitHub Actionsページへ誘導
+    if(GH_CONFIG.enabled){
+      window.open('https://github.com/'+GH_CONFIG.owner+'/'+GH_CONFIG.repo+'/actions/workflows/fetch_and_deploy.yml','_blank');
+      st.textContent = 'GitHub Actions ページで "Run workflow" をクリックしてください';
+      st.className = 'refresh-status running';
+    } else {
+      st.textContent = 'GitHub連携未設定 - ローカルで python main.py を実行してください';
+      st.className = 'refresh-status error';
+    }
+    return;
+  }
+
+  // PAT設定済みの場合: API経由でワークフロー実行
+  btn.classList.add('loading');
+  st.textContent = 'データ更新を開始しています...';
+  st.className = 'refresh-status running';
+
+  fetch('https://api.github.com/repos/'+GH_CONFIG.owner+'/'+GH_CONFIG.repo+'/actions/workflows/fetch_and_deploy.yml/dispatches',{
+    method:'POST',
+    headers:{
+      'Accept':'application/vnd.github.v3+json',
+      'Authorization':'token '+GH_CONFIG.pat,
+      'Content-Type':'application/json'
+    },
+    body:JSON.stringify({ref:'main'})
+  }).then(function(r){
+    if(r.status===204){
+      st.textContent = 'データ更新開始! 約5分後にページを再読込してください';
+      st.className = 'refresh-status success';
+      // 5分後に自動リロード
+      setTimeout(function(){ location.reload(); }, 300000);
+    } else {
+      st.textContent = 'エラー('+r.status+') - GitHub Actionsページで手動実行してください';
+      st.className = 'refresh-status error';
+    }
+    btn.classList.remove('loading');
+  }).catch(function(e){
+    st.textContent = 'ネットワークエラー - GitHub Actionsページで手動実行してください';
+    st.className = 'refresh-status error';
+    btn.classList.remove('loading');
+  });
+}
+</script>
+</body>
+</html>
