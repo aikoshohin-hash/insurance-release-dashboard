@@ -50,6 +50,10 @@ concurrency:
 jobs:
   fetch-and-deploy:
     runs-on: ubuntu-latest
+    # ランナーは UTC。23:17 UTC 起動だと日本の日付と1日ずれ、メール件名の日付・
+    # 検知日(first_seen)・鮮度判定・ダッシュボードの作成時刻が前日扱いになる。
+    env:
+      TZ: Asia/Tokyo
     # 本文/PDF エンリッチで最大100件ほど取得するため v3(15分)から拡大
     timeout-minutes: 30
 
