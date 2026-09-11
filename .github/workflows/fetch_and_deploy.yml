@@ -14,8 +14,14 @@ name: Fetch & Deploy Report
 
 on:
   schedule:
-    # 毎日 0:00 UTC = 9:00 JST
-    - cron: '0 0 * * *'
+    # 23:17 UTC = 翌 08:17 JST
+    #
+    # 以前は '0 0 * * *'（= 9:00 JST 狙い）だったが、実測では連日
+    # 03:42〜03:56 UTC に起動しており、約4時間遅れて JST 12:45 頃に
+    # 更新されていた。0:00 UTC は毎時0分かつ日付境界という最混雑スロットで、
+    # GitHub のスケジュール実行は常に「遅れる」方向にのみずれるため。
+    # 要求窓の下端に置き、分を0以外にしてスパイクを避ける。
+    - cron: '17 23 * * *'
   workflow_dispatch:
     # GitHub UI/API から手動トリガー可能
     inputs:
@@ -34,11 +40,18 @@ permissions:
   contents: write
   pages: write
   id-token: write
+  issues: write     # 通知メールの送信失敗を Issue で知らせるため
+
+# スナップショット保存前に殺されると状態が壊れるため、実行中のジョブは止めない
+concurrency:
+  group: fetch-and-deploy
+  cancel-in-progress: false
 
 jobs:
   fetch-and-deploy:
     runs-on: ubuntu-latest
-    timeout-minutes: 15
+    # 本文/PDF エンリッチで最大100件ほど取得するため v3(15分)から拡大
+    timeout-minutes: 30
 
     steps:
       - name: Checkout repository
@@ -58,6 +71,17 @@ jobs:
       - name: Fetch releases and generate report
         env:
           PYTHONIOENCODING: utf-8
+          # ── 新規検知メール（Gmail） ──
+          # 秘密情報は Settings > Secrets and variables > Actions に登録したものだけを使う。
+          # 3つのうち1つでも未登録なら送信はスキップされ、処理自体は通常どおり完走する。
+          # このワークフローには pull_request トリガーが無く、またフォークからの PR には
+          # Secrets が渡らない仕様のため、PUBLIC リポジトリでも外部から読まれない。
+          SMTP_HOST: smtp.gmail.com
+          SMTP_PORT: "465"
+          SMTP_USER: ${{ secrets.SMTP_USER }}
+          SMTP_PASSWORD: ${{ secrets.SMTP_PASSWORD }}
+          MAIL_TO: ${{ secrets.MAIL_TO }}
+          NOTIFY_TIERS: PRODUCT
         run: |
           # 手動トリガー時に会社指定がある場合
           COMPANY_ARG=""
@@ -67,6 +91,62 @@ jobs:
 
           # データ取得 & HTMLレポート生成 (Google Sheets はスキップ)
           python main.py --no-gsheet $COMPANY_ARG
+
+      # 本文エンリッチのキャッシュを main に書き戻す。
+      #   ・同じURLを毎日取りに行かないため（相手サイトへの負荷と実行時間を抑える）
+      #   ・利率の履歴が git 履歴としてそのまま残るため
+      # actions/cache は使わない（7日無アクセスで消え、消えると全件取り直しになる）。
+      # GITHUB_TOKEN による push は workflow を再発火しない仕様なので無限ループしない。
+      # data/enrichment.json（本文キャッシュ）と data/seen.json（新規検知の台帳）を書き戻す。
+      # 台帳が消えると翌日に全件が「新規」として通知されるため、ここは必ず残す。
+      - name: Commit data (enrichment cache & seen ledger)
+        run: |
+          if [ -n "$(git status --porcelain data/)" ]; then
+            git config user.name  "github-actions[bot]"
+            git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+            git add data/
+            git commit -m "chore: データ更新 本文キャッシュ・検知台帳 ($(date -u '+%Y-%m-%d'))"
+            # 実行中に main へ手動 push があっても衝突しないよう、rebase してから送る
+            git pull --rebase origin main
+            git push origin HEAD:main
+          else
+            echo "data/ に変化なし"
+          fi
+
+      # 新規検知の内容を Actions の実行サマリーにも出す（メールを見逃しても後から追える）
+      - name: Write job summary
+        if: always()
+        run: |
+          if [ -f output/notify.md ]; then
+            cat output/notify.md >> "$GITHUB_STEP_SUMMARY"
+          else
+            echo "本日の新規検知: 0件" >> "$GITHUB_STEP_SUMMARY"
+          fi
+
+      # メール送信に失敗した日は Issue にする（黙って届かない状態を作らない）
+      - name: Report notify failure
+        if: always()
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          if [ -f output/notify_error.txt ]; then
+            gh label create notify-failure --color B60205 \
+              --description "新規検知メールの送信失敗" 2>/dev/null || true
+            {
+              echo "新規検知メールの送信に失敗しました。"
+              echo
+              echo '```'
+              cat output/notify_error.txt
+              echo '```'
+              echo
+              echo "Gmail のアプリパスワードが失効・削除されていないか、Secrets の SMTP_USER / SMTP_PASSWORD / MAIL_TO を確認してください。"
+              echo "送るはずだった内容は下記です。"
+              echo
+              [ -f output/notify.md ] && cat output/notify.md
+            } > issue_body.md
+            gh issue create --title "通知メール送信失敗 $(date -u '+%Y-%m-%d')" \
+              --label notify-failure --body-file issue_body.md
+          fi
 
       - name: Prepare deploy directory
         run: |

@@ -4,6 +4,8 @@ import re
 import json
 import time
 import logging
+from urllib.parse import urljoin
+
 from .base import BaseScraper
 from config import COMPANIES
 
@@ -61,15 +63,10 @@ class TaiyoScraper(BaseScraper):
             link = item.get("link", "")
 
             # 相対パスを絶対に変換
+            #  JSON は /wr2/json/ 配下にあるため "../pdf/..." の基準は /wr2/。
+            #  ここを /company/notice/ に固定連結していたため全件404だった（v4で修正）。
             if link and not link.startswith("http"):
-                if link.startswith("../"):
-                    # PDF相対パス: ../pdf/... → /company/notice/pdf/...
-                    if category == "A":
-                        link = f"https://www.taiyo-seimei.co.jp/company/notice/{link.replace('../', '')}"
-                    else:
-                        link = f"https://www.taiyo-seimei.co.jp/company/notice/{link.replace('../', '')}"
-                else:
-                    link = self._absolute_url(link)
+                link = urljoin(url, link)
 
             # ファイルサイズ除去
             title = re.sub(r"（PDF\s*[\d.]+KB）", "", title).strip()

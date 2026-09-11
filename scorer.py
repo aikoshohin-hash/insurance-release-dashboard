@@ -1,76 +1,59 @@
-"""ニュース価値スコアリング & ランキングモジュール
+"""ニュース価値スコアリング & ランキング v4
 
-各リリースに対して以下の観点でスコアを付与:
-  - キーワード重要度（新発売 > 改定 > お知らせ）
-  - 鮮度（新しいほど高スコア）
-  - カテゴリ重要度（プレスリリース > ニュースリリース > お知らせ）
-  - 会社規模/ブランド力
-  - 商品性（一時払い関連は高評価）
+【v3 の何が問題だったか】
+    score = keyword + recency + category + brand + ichiji  （全て加点）
 
-スコアは 0〜100 の範囲で正規化される。
+    加点しか無いため、中身の無いリリースでも
+      ブランド14 + カテゴリ15 + 鮮度13 = 42点
+    の下駄を履き、「創作四字熟語 募集開始」が B ランクに並んでいた。
+    S ランクは113件中1件しか出ず、ランクが選別として機能していなかった。
+
+【v4 の考え方】
+    1. 採点の前に relevance.py の 3値ゲートを通す。
+       EXCLUDE は採点対象にすらしない（除外ログに落とす）。
+    2. 点数の主軸は「商品に何が起きたか」(action) に置く。
+       ブランドと鮮度は **補助** に降格させ、合計でも20点に届かないようにする。
+    3. 「一時払い・銀行窓販」という関心軸を独立した focus_score として持つ。
+       銀行窓販の商品ウォッチという用途では、これが実質的な選別軸になる。
+    4. 本文を読めたか（利率の数値を掴めたか）を evidence として加点する。
+       裏の取れたニュースを上に出すため。
+
+    配点:
+        action    0-40   商品アクション（新商品発売40 / 販売開始38 / 利率改定36 …）
+        focus     0-25   一時払10 + 銀行窓販8 + 外貨4 + 変額3
+        evidence  0-15   本文取得5 + 利率数値6 + 商品名2 + 販売開始日2
+        recency   0-12   鮮度
+        brand     0- 8   会社ブランド
+        ─────────────
+        合計      0-100
 """
 
-import re
+from __future__ import annotations
+
 import logging
+import re
 from datetime import date, datetime
 
-from config import DATE_FROM
 from companies import get_brand_scores
+from relevance import classify, TIER_PRODUCT, TIER_PERIPHERAL, TIER_EXCLUDE
 
 logger = logging.getLogger(__name__)
 
-
-# ── スコア重み設定 ──
-
-# キーワード重要度（出現で加点）
-KEYWORD_SCORES = {
-    # 最重要: 新商品関連
-    "新発売": 30,
-    "新商品": 30,
-    "販売開始": 28,
-    "発売開始": 28,
-    "発売": 25,
-    "販売": 22,
-    "取扱開始": 25,
-    "提供開始": 22,
-    # 重要: 改定・変更
-    "改定": 18,
-    "商品改定": 20,
-    "リニューアル": 20,
-    "バージョンアップ": 18,
-    "機能強化": 15,
-    "機能拡張": 15,
-    "レベルアップ": 12,
-    # 一般
-    "開始": 10,
-    "取扱": 10,
-    "仕様変更": 8,
-    "名称変更": 6,
-    "届出": 5,
-    "予定利率": 15,
-}
-
-# 一時払い保険関連キーワード（追加加点）
-ICHIJI_KEYWORDS = [
-    "一時払", "一時払い", "定額年金", "変額年金",
-    "外貨建", "ドル建", "豪ドル", "円建",
-    "終身保険", "養老保険", "個人年金",
-    "据置", "ターゲット", "定期支払",
-]
-
-# カテゴリスコア
-CATEGORY_SCORES = {
-    "C": 15,  # プレスリリース（最重要）
-    "B": 10,  # ニュースリリース
-    "A": 5,   # お知らせ
-}
-
-# 会社ブランド力（companies.py から自動取得）
 COMPANY_BRAND_SCORES = get_brand_scores()
 
+# 周辺(PERIPHERAL)は商品そのものではないため、Bランクの上限で頭を押さえる。
+# これをしないと大手の事務サービス告知が本線の商品リリースを押しのける。
+PERIPHERAL_CAP = 44
+
+# ランク閾値
+RANK_THRESHOLDS = [(75, "S"), (60, "A"), (45, "B"), (30, "C")]
+
+
+# ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+#  各軸
+# ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
 def _parse_date(date_str: str) -> date | None:
-    """日付文字列を date に変換"""
     if not date_str:
         return None
     for fmt in ("%Y/%m/%d", "%Y-%m-%d", "%Y.%m.%d"):
@@ -80,172 +63,156 @@ def _parse_date(date_str: str) -> date | None:
             continue
     m = re.search(r"(\d{4})\D+(\d{1,2})\D+(\d{1,2})", date_str)
     if m:
-        return date(int(m.group(1)), int(m.group(2)), int(m.group(3)))
+        try:
+            return date(int(m.group(1)), int(m.group(2)), int(m.group(3)))
+        except ValueError:
+            return None
     return None
 
 
 def score_recency(date_str: str) -> float:
-    """鮮度スコア（0〜15）: 直近の方が高い"""
+    """鮮度スコア（0〜12）。v3の15点から降格させ、古い商品ニュースが
+    新しい広報ニュースに負けないようにする。"""
     d = _parse_date(date_str)
     if d is None:
-        return 5.0  # 不明は中間値
-
-    today = date.today()
-    delta = (today - d).days
-
+        return 3.0
+    delta = (date.today() - d).days
     if delta <= 7:
-        return 15.0
-    elif delta <= 14:
-        return 13.0
-    elif delta <= 30:
-        return 11.0
-    elif delta <= 60:
-        return 8.0
-    elif delta <= 90:
-        return 5.0
-    else:
-        return 2.0
-
-
-def score_keyword(title: str) -> float:
-    """キーワード重要度スコア（0〜30）"""
-    best = 0.0
-    for kw, sc in KEYWORD_SCORES.items():
-        if kw in title:
-            best = max(best, sc)
-    return best
-
-
-def score_ichiji(title: str) -> float:
-    """一時払い保険関連スコア（0〜15）"""
-    count = sum(1 for kw in ICHIJI_KEYWORDS if kw in title)
-    if count >= 3:
-        return 15.0
-    elif count == 2:
         return 12.0
-    elif count == 1:
+    if delta <= 14:
+        return 10.0
+    if delta <= 30:
         return 8.0
-    return 0.0
-
-
-def score_category(category: str) -> float:
-    """カテゴリスコア（0〜15）"""
-    return CATEGORY_SCORES.get(category, 5.0)
+    if delta <= 60:
+        return 5.0
+    if delta <= 90:
+        return 3.0
+    return 1.0
 
 
 def score_brand(company: str) -> float:
-    """会社ブランドスコア（0〜15）"""
-    return COMPANY_BRAND_SCORES.get(company, 7.0)
+    """ブランドスコア（0〜8）。v3の15点から降格。"""
+    raw = COMPANY_BRAND_SCORES.get(company, 7)
+    return round(raw / 15.0 * 8.0, 1)
 
 
-def estimate_popularity(entry: dict) -> int:
-    """人気度推定（★1〜5）
-
-    キーワード注目度 + カテゴリ + 会社ブランド + 一時払い関連度を
-    総合的に判定して ★ 数で返す。
-    """
-    title = entry.get("title", "")
-    score = 0.0
-
-    # 新商品系は注目度高い
-    new_product_kws = ["新発売", "新商品", "販売開始", "発売開始", "取扱開始", "提供開始"]
-    if any(kw in title for kw in new_product_kws):
-        score += 3.0
-
-    # 一時払い/年金保険系は銀行窓販で注目度高い
-    ichiji_count = sum(1 for kw in ICHIJI_KEYWORDS if kw in title)
-    score += min(ichiji_count * 0.8, 2.0)
-
-    # カテゴリ
-    cat = entry.get("category", "")
-    if cat == "C":
-        score += 1.0
-    elif cat == "B":
-        score += 0.5
-
-    # 会社ブランド
-    brand = COMPANY_BRAND_SCORES.get(entry.get("company", ""), 7)
-    score += brand / 15.0
-
-    # ★に変換（1〜5）
-    stars = min(5, max(1, round(score)))
-    return stars
-
-
-def compute_score(entry: dict) -> dict:
-    """エントリに対して総合スコアを算出
+def score_focus(facts: dict) -> tuple[float, list[str]]:
+    """関心軸スコア（0〜25）— 一時払い・銀行窓販の商品ウォッチとしての重み。
 
     Returns:
-        entry に以下のキーを追加:
-          - score: 総合スコア（0〜100）
-          - score_detail: スコア内訳
-          - popularity: 人気度（★1〜5）
-          - rank_label: ランクラベル（S/A/B/C/D）
+        (点数, 効いた軸のラベル)
     """
-    title = entry.get("title", "")
-    date_str = entry.get("date", "")
-    category = entry.get("category", "")
-    company = entry.get("company", "")
+    if not facts:
+        return 0.0, []
+    total = 0.0
+    labels: list[str] = []
+    if facts.get("is_single_premium"):
+        total += 10.0
+        labels.append("一時払")
+    if facts.get("is_bank_channel"):
+        total += 8.0
+        labels.append("銀行窓販")
+    if facts.get("is_fx"):
+        total += 4.0
+        labels.append("外貨建")
+    if facts.get("is_variable"):
+        total += 3.0
+        labels.append("変額")
+    return min(25.0, total), labels
 
-    # 各スコア算出
-    s_keyword = score_keyword(title)
-    s_recency = score_recency(date_str)
-    s_ichiji = score_ichiji(title)
-    s_category = score_category(category)
-    s_brand = score_brand(company)
 
-    # 合計（最大 100 = 30 + 15 + 15 + 15 + 15 + 10ボーナス）
-    total = s_keyword + s_recency + s_ichiji + s_category + s_brand
-
-    # ボーナス: PDF直リンクがある場合
-    url = entry.get("url", "")
-    if url.endswith(".pdf"):
+def score_evidence(entry: dict, facts: dict) -> tuple[float, list[str]]:
+    """裏取りスコア（0〜15）— 本文まで読めているものを上に出す。"""
+    if not facts:
+        return 0.0, []
+    total = 0.0
+    labels: list[str] = []
+    if entry.get("body_status") in ("html", "pdf"):
         total += 5.0
+        labels.append("本文取得")
+    if facts.get("rate_change"):
+        total += 6.0
+        labels.append("改定幅")
+    elif facts.get("rates"):
+        total += 6.0
+        labels.append("利率数値")
+    if facts.get("product_names"):
+        total += 2.0
+        labels.append("商品名")
+    if facts.get("sale_start"):
+        total += 2.0
+        labels.append("販売開始日")
+    return min(15.0, total), labels
 
-    # 100で上限
-    total = min(100.0, total)
 
-    # ランクラベル
-    if total >= 75:
-        rank = "S"
-    elif total >= 60:
-        rank = "A"
-    elif total >= 45:
-        rank = "B"
-    elif total >= 30:
-        rank = "C"
-    else:
-        rank = "D"
+def estimate_popularity(entry: dict, focus: float, action: float) -> int:
+    """注目度（★1〜5）。v3 のような独自ロジックを持たず、
+    本体スコアの構成要素から素直に導く（二重基準を作らないため）。"""
+    raw = action / 40.0 * 3.0 + focus / 25.0 * 2.0
+    return min(5, max(1, round(raw)))
 
-    entry["score"] = round(total, 1)
+
+# ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+#  総合
+# ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+def compute_score(entry: dict) -> dict:
+    """エントリに総合スコアとランクを付与する。
+
+    entry には事前に以下が入っている前提:
+        entry["relevance"] : relevance.classify() の結果（無ければここで算出）
+        entry["facts"]     : enricher.extract_facts() の結果（無ければ空扱い）
+    """
+    rel   = entry.get("relevance") or classify(entry.get("title", ""))
+    facts = entry.get("facts") or {}
+
+    s_action           = float(rel.get("action_score", 0))
+    s_focus, f_labels  = score_focus(facts)
+    s_evid,  e_labels  = score_evidence(entry, facts)
+    s_recency          = score_recency(entry.get("date", ""))
+    s_brand            = score_brand(entry.get("company", ""))
+
+    total = s_action + s_focus + s_evid + s_recency + s_brand
+
+    # 周辺は頭を押さえる
+    if rel.get("tier") == TIER_PERIPHERAL:
+        total = min(total, PERIPHERAL_CAP)
+
+    total = round(min(100.0, total), 1)
+
+    rank = "D"
+    for threshold, label in RANK_THRESHOLDS:
+        if total >= threshold:
+            rank = label
+            break
+
+    entry["score"] = total
     entry["score_detail"] = {
-        "keyword": round(s_keyword, 1),
-        "recency": round(s_recency, 1),
-        "ichiji": round(s_ichiji, 1),
-        "category": round(s_category, 1),
-        "brand": round(s_brand, 1),
+        "action":   round(s_action, 1),
+        "focus":    round(s_focus, 1),
+        "evidence": round(s_evid, 1),
+        "recency":  round(s_recency, 1),
+        "brand":    s_brand,
     }
-    entry["popularity"] = estimate_popularity(entry)
-    entry["rank_label"] = rank
-
+    entry["rank_label"]  = rank
+    entry["tier"]        = rel.get("tier", TIER_PRODUCT)
+    entry["action_type"] = rel.get("action", "")
+    entry["focus_labels"]    = f_labels
+    entry["evidence_labels"] = e_labels
+    entry["popularity"]  = estimate_popularity(entry, s_focus, s_action)
     return entry
 
 
 def score_and_rank(entries: list[dict]) -> list[dict]:
-    """エントリリスト全体にスコアを付与し、スコア降順でソート"""
+    """スコア付与 → 本線優先・スコア降順で並べる。"""
     scored = [compute_score(e) for e in entries]
-    scored.sort(key=lambda x: x.get("score", 0), reverse=True)
-
-    # 順位付与
+    # 本線(PRODUCT)を常に周辺(PERIPHERAL)より上に置く
+    tier_key = {TIER_PRODUCT: 0, TIER_PERIPHERAL: 1, TIER_EXCLUDE: 2}
+    scored.sort(key=lambda x: (tier_key.get(x.get("tier"), 2), -x.get("score", 0)))
     for i, e in enumerate(scored, 1):
         e["rank"] = i
-
     return scored
 
 
 def score_categorized(categorized: dict[str, list[dict]]) -> dict[str, list[dict]]:
-    """カテゴリ別データ全体にスコアリング＆ランキングを適用"""
-    result = {}
-    for cat, entries in categorized.items():
-        result[cat] = score_and_rank(entries)
-    return result
+    return {cat: score_and_rank(entries) for cat, entries in categorized.items()}

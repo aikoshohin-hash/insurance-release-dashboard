@@ -1,9 +1,23 @@
-"""リリース抽出フィルタリングモジュール"""
+"""リリース抽出フィルタリング v4
+
+v3 は KEYWORDS_JA の部分一致で「通す/通さない」を決め、通さなかったものは
+黙って捨てていた。そのため
+  ・裸の「開始」で広報ニュースが大量に通る
+  ・逆に取りこぼしても誰も気づけない
+という二重の問題があった。
+
+v4 は判定を relevance.py に委ね、**除外したものも理由付きで返す**。
+除外分はダッシュボードの「除外ログ」タブに出す。ゲートが正しく効いているかを
+人が毎日検証できなければ、ゲートは信用できないため。
+"""
+
+from __future__ import annotations
 
 import re
 from datetime import date, datetime
 
-from config import KEYWORDS_JA, KEYWORDS_EN, PRODUCT_KEYWORDS, DATE_FROM, DATE_TO
+from config import DATE_FROM, DATE_TO
+from relevance import classify, TIER_EXCLUDE
 
 
 def parse_date(date_str: str) -> date | None:
@@ -20,88 +34,62 @@ def parse_date(date_str: str) -> date | None:
     # "2025年10月1日" 形式
     m = re.search(r"(\d{4})\D+(\d{1,2})\D+(\d{1,2})", date_str)
     if m:
-        return date(int(m.group(1)), int(m.group(2)), int(m.group(3)))
+        try:
+            return date(int(m.group(1)), int(m.group(2)), int(m.group(3)))
+        except ValueError:
+            return None
     return None
 
 
 def is_in_date_range(
     date_str: str,
-    date_from: date = DATE_FROM,
-    date_to: date = DATE_TO,
+    date_from: date | None = None,
+    date_to: date | None = None,
 ) -> bool:
     """日付が抽出対象期間内かどうか判定"""
     d = parse_date(date_str)
     if d is None:
         return False  # 日付不明のエントリは除外（誤表示防止）
-    return date_from <= d <= date_to
+    return (date_from or DATE_FROM) <= d <= (date_to or DATE_TO)
 
 
-def match_keywords(title: str) -> str | None:
-    """見出しにキーワードが含まれているか判定し、マッチしたキーワードを返す"""
-    for kw in KEYWORDS_JA:
-        if kw in title:
-            return kw
-    title_lower = title.lower()
-    for kw in KEYWORDS_EN:
-        if kw in title_lower:
-            return kw
-    return None
+def filter_releases(releases: list[dict]) -> tuple[list[dict], list[dict]]:
+    """リリースリストを「本線＋周辺」と「除外」に分ける。
 
-
-def match_product_service(title: str) -> str | None:
-    """商品/サービス関連のキーワードに合致するか判定"""
-    for kw in PRODUCT_KEYWORDS:
-        if kw in title:
-            return kw
-    return None
-
-
-def filter_release(entry: dict) -> dict | None:
-    """リリースエントリをフィルタリング
-
-    条件に合致する場合は抽出理由を付与して返す。
-    合致しない場合は None を返す。
+    Returns:
+        (kept, excluded)
+          kept     : PRODUCT / PERIPHERAL。entry["relevance"] に判定結果が入る
+          excluded : EXCLUDE。理由付き。件数把握と検証のために保持する
     """
-    title = entry.get("title", "")
-    date_str = entry.get("date", "")
+    kept: list[dict] = []
+    excluded: list[dict] = []
+    seen: set[tuple[str, str]] = set()
 
-    # 日付フィルタ
-    if not is_in_date_range(date_str):
-        return None
+    for raw in releases:
+        entry = raw.copy()
+        title = entry.get("title", "")
 
-    # キーワードマッチ
-    kw = match_keywords(title)
-    if kw:
-        entry["reason"] = f"キーワード一致: 「{kw}」"
-        return entry
-
-    # 商品/サービス改定マッチ
-    pk = match_product_service(title)
-    if pk:
-        entry["reason"] = f"商品/サービス改定・開始に該当: 「{pk}」"
-        return entry
-
-    return None
-
-
-def filter_releases(releases: list[dict]) -> list[dict]:
-    """リリースリスト全体をフィルタリング"""
-    filtered = []
-    seen = set()
-
-    for entry in releases:
-        result = filter_release(entry.copy())
-        if result is None:
+        # 日付フィルタ（期間外は集計にも載せない）
+        if not is_in_date_range(entry.get("date", "")):
             continue
 
         # 重複排除（URL + タイトルの組合せ）
-        dedup_key = (result.get("url", ""), result.get("title", ""))
+        dedup_key = (entry.get("url", ""), title)
         if dedup_key in seen:
             continue
         seen.add(dedup_key)
 
-        filtered.append(result)
+        rel = classify(title)
+        entry["relevance"] = rel
+        entry["tier"]      = rel["tier"]
+        entry["reason"]    = rel["reason"]
 
-    # 日付降順ソート
-    filtered.sort(key=lambda x: x.get("date", ""), reverse=True)
-    return filtered
+        if rel["tier"] == TIER_EXCLUDE:
+            entry["noise_kind"] = rel.get("noise_kind", "")
+            excluded.append(entry)
+        else:
+            kept.append(entry)
+
+    kept.sort(key=lambda x: x.get("date", ""), reverse=True)
+    excluded.sort(key=lambda x: x.get("date", ""), reverse=True)
+    return kept, excluded

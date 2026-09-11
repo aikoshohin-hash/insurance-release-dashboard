@@ -247,6 +247,14 @@ tbody td { padding: 11px 14px; vertical-align: top; }
   border-radius: 3px;
   margin: 2px 2px 0 0;
 }
+/* 商品アクション: 何が起きたか。一覧で最初に目に入るべきもの */
+.tag-act   { background:#1f3f77; color:#fff; font-weight:600; }
+/* 関心軸: 一時払・銀行窓販・外貨建・変額 */
+.tag-focus { background:#0b7a55; color:#fff; }
+/* 本文から数値を掴めた利率 */
+.tag-rate  { background:#fff3cd; color:#7a5a00; border:1px solid #e6c96a; font-weight:600; }
+/* 商品そのものではない周辺ニュース */
+.tag-peri  { background:#e9e9ee; color:#6b6b76; }
 
 /* 詳細行 */
 .detail-tr td {
@@ -468,6 +476,9 @@ tbody td { padding: 11px 14px; vertical-align: top; }
     <button class="nav-item" id="nav-health" onclick="go('health')" style="margin-top:12px">
       🔔 取得ステータス <span class="nav-count" id="nc-alert" style="background:#ff4b4b;display:none">0</span>
     </button>
+    <button class="nav-item" onclick="go('excluded')">
+      除外ログ <span class="nav-count" id="nc-excl">0</span>
+    </button>
 
     <h3>フィルター</h3>
     <input type="text" id="search" placeholder="キーワード検索..." oninput="refresh()">
@@ -482,6 +493,12 @@ tbody td { padding: 11px 14px; vertical-align: top; }
     <select id="fCompany" onchange="refresh()"></select>
     <label style="display:flex;align-items:center;gap:6px;font-size:0.82rem;margin:6px 0;cursor:pointer">
       <input type="checkbox" id="fNewOnly" onchange="refresh()" style="accent-color:var(--rank-s)"> 新着のみ表示
+    </label>
+    <label style="display:flex;align-items:center;gap:6px;font-size:0.82rem;margin:6px 0;cursor:pointer">
+      <input type="checkbox" id="fProductOnly" onchange="refresh()" checked style="accent-color:var(--rank-s)"> 商品リリースのみ
+    </label>
+    <label style="display:flex;align-items:center;gap:6px;font-size:0.82rem;margin:6px 0;cursor:pointer">
+      <input type="checkbox" id="fFocusOnly" onchange="refresh()" style="accent-color:var(--rank-s)"> 一時払・銀行窓販のみ
     </label>
 
     <!-- データ更新セクション -->
@@ -511,15 +528,15 @@ tbody td { padding: 11px 14px; vertical-align: top; }
     <!-- メトリクス -->
     <div class="metrics">
       <div class="metric">
-        <div class="label">総リリース数</div>
+        <div class="label">商品リリース</div>
         <div class="value" id="m-total">0</div>
       </div>
       <div class="metric">
-        <div class="label">S ランク</div>
+        <div class="label">一時払・銀行窓販</div>
         <div class="value" style="color:var(--rank-s)" id="m-srank">0</div>
       </div>
       <div class="metric">
-        <div class="label">平均スコア</div>
+        <div class="label">利率を掴んだ件数</div>
         <div class="value" id="m-avg">0</div>
       </div>
       <div class="metric metric-new">
@@ -536,6 +553,7 @@ tbody td { padding: 11px 14px; vertical-align: top; }
     <div id="page-catC" style="display:none"></div>
     <div id="page-charts" style="display:none"></div>
     <div id="page-health" style="display:none"></div>
+    <div id="page-excluded" style="display:none"></div>
 
     <div class="footer">保険リリース自動取得ツール v3</div>
   </div>
@@ -543,6 +561,7 @@ tbody td { padding: 11px 14px; vertical-align: top; }
 
 <script>
 var DATA = /*DATA_JSON*/[];
+var EXCLUDED = /*EXCLUDED_JSON*/[];
 var HEALTH = /*HEALTH_JSON*/{"summary":{"total":0,"ok":0,"warning":0,"error":0},"companies":[],"generated_at":""};
 var currentPage = 'ranking';
 var GH_CONFIG = /*GH_CONFIG_JSON*/{"owner":"","repo":"","enabled":false};
@@ -557,8 +576,11 @@ function parseDate(s){
 }
 
 // 新着判定
+// 新着 = 「台帳(data/seen.json)に初めて載った日」が NEW_DAYS 以内。
+// リリース日付ではなく検知日で見る。日付の古い記事が後から載った場合も拾え、
+// 同じ記事が何日も新着に居座ることもない。台帳情報が無い場合のみ日付で代用する。
 function isNew(e){
-  var d = parseDate(e.date);
+  var d = parseDate(e.first_seen || e.date);
   if(!d) return false;
   var now = new Date();
   now.setHours(0,0,0,0);
@@ -584,16 +606,23 @@ DATA.forEach(function(e){ e._isNew = isNew(e); });
 })();
 
 function updateMetrics(){
-  document.getElementById('m-total').textContent = DATA.length;
-  var s=0; DATA.forEach(function(e){ if(e.rank_label==='S') s++; });
-  document.getElementById('m-srank').textContent = s;
-  var sum=0; DATA.forEach(function(e){ sum+=e.score||0; });
-  document.getElementById('m-avg').textContent = DATA.length? (sum/DATA.length).toFixed(1) : '0';
-  // 新着カウント
-  var nw=0; DATA.forEach(function(e){ if(e._isNew) nw++; });
+  var prod = DATA.filter(function(e){ return e.tier === 'PRODUCT'; });
+  var focus = DATA.filter(function(e){ return (e.focus_labels||[]).length > 0; });
+  var withRate = DATA.filter(function(e){
+    return e.facts && ((e.facts.rates||[]).length > 0 || e.facts.rate_change);
+  });
+
+  document.getElementById('m-total').textContent = prod.length;
+  document.getElementById('m-srank').textContent = focus.length;
+  document.getElementById('m-avg').textContent = withRate.length;
+
+  // 新着カウント（本線のみ数える。広報の新着で埋まらないようにする）
+  var nw=0; prod.forEach(function(e){ if(e._isNew) nw++; });
   document.getElementById('m-new').textContent = nw;
   document.getElementById('m-new-sub').textContent = nw>0 ? 'NEW!' : '-';
+
   document.getElementById('nc-all').textContent = DATA.length;
+  document.getElementById('nc-excl').textContent = EXCLUDED.length;
   ['A','B','C'].forEach(function(c){
     var n=0; DATA.forEach(function(e){ if(e.cat_key===c) n++; });
     document.getElementById('nc-'+c).textContent = n;
@@ -605,13 +634,18 @@ function getFiltered(catKey){
   var r = document.getElementById('fRank').value;
   var c = document.getElementById('fCompany').value;
   var nOnly = document.getElementById('fNewOnly').checked;
+  var pOnly = document.getElementById('fProductOnly').checked;
+  var foOnly = document.getElementById('fFocusOnly').checked;
   var result = DATA.filter(function(e){
     if(catKey && e.cat_key !== catKey) return false;
     if(r && e.rank_label !== r) return false;
     if(c && e.company !== c) return false;
     if(nOnly && !e._isNew) return false;
+    if(pOnly && e.tier !== 'PRODUCT') return false;
+    if(foOnly && !(e.focus_labels||[]).length) return false;
     if(q){
-      var t = (e.title||'')+(e.company||'')+(e.commentary||'')+(e.product_type||'');
+      var t = (e.title||'')+(e.company||'')+(e.commentary||'')+(e.product_type||'')
+            + (e.fact_line||'') + ((e.facts&&e.facts.banks||[]).join(''));
       if(t.toLowerCase().indexOf(q)===-1) return false;
     }
     return true;
@@ -648,8 +682,22 @@ function buildTable(entries, title){
     var tHtml = url ? '<a href="'+url+'" target="_blank" rel="noopener">'+esc(e.title)+'</a>' : esc(e.title);
     var newBadge = e._isNew ? '<span class="badge-new">NEW</span>' : '';
     var tags = '';
+    if(e.tier === 'PERIPHERAL') tags += '<span class="tag tag-peri">周辺</span>';
+    if(e.action_type) tags += '<span class="tag tag-act">'+esc(e.action_type)+'</span>';
+    (e.focus_labels||[]).forEach(function(f){
+      tags += '<span class="tag tag-focus">'+esc(f)+'</span>';
+    });
     if(e.product_type) tags += '<span class="tag">'+esc(e.product_type)+'</span>';
-    if(e.action_type) tags += '<span class="tag">'+esc(e.action_type)+'</span>';
+    var fx = e.facts||{};
+    if(fx.rate_change){
+      var arrow = fx.rate_change.direction==='引き下げ' ? '↓' : '↑';
+      tags += '<span class="tag tag-rate">'+fx.rate_change.from+'% '+arrow+' '
+            + fx.rate_change.to+'%</span>';
+    } else {
+      (fx.rates||[]).slice(0,1).forEach(function(r){
+        tags += '<span class="tag tag-rate">'+esc(r.kind)+' '+r.value+'%</span>';
+      });
+    }
     if(e.cat_label) tags += '<span class="tag">'+esc(e.cat_label)+'</span>';
     h += '<tr onclick="toggle(\''+id+'\')" class="'+(e._isNew?'row-new':'')+'">';
     h += '<td class="rank-cell rank-'+e.rank_label+'">'+e.rank_label+'</td>';
@@ -663,19 +711,67 @@ function buildTable(entries, title){
     var d = e.score_detail||{};
     h += '<tr class="detail-tr"><td colspan="6"><div class="detail-content" id="d-'+id+'">';
     h += '<div class="detail-grid"><div class="commentary">';
-    if(e.commentary) h += '<strong>コメンタリー:</strong> '+esc(e.commentary)+'<br>';
-    if(e.reason) h += '<strong>抽出理由:</strong> '+esc(e.reason);
+    if(e.fact_line)   h += '<strong>事実:</strong> '+esc(e.fact_line)+'<br>';
+    if(e.implication) h += '<strong>含意:</strong> '+esc(e.implication)+'<br>';
+    if(e.comparison)  h += '<strong>比較:</strong> '+esc(e.comparison)+'<br>';
+    if(!e.fact_line && !e.implication && !e.comparison && e.commentary)
+      h += '<strong>状況:</strong> '+esc(e.commentary)+'<br>';
+    if((fx.banks||[]).length)
+      h += '<strong>取扱金融機関:</strong> '+esc(fx.banks.join('、'))+'<br>';
+    if(e.reason)      h += '<span style="color:var(--text-light)">判定: '+esc(e.reason)+'</span><br>';
+    if(e.body_status) h += '<span style="color:var(--text-light)">本文: '+esc(e.body_status)+'</span>';
     h += '</div><div class="score-breakdown">';
     h += '<div style="font-weight:600;font-size:0.78rem;margin-bottom:4px">スコア内訳</div>';
-    h += sbRow('キーワード',d.keyword||0,30);
-    h += sbRow('鮮度',d.recency||0,15);
-    h += sbRow('一時払い',d.ichiji||0,15);
-    h += sbRow('カテゴリ',d.category||0,15);
-    h += sbRow('ブランド',d.brand||0,15);
+    h += sbRow('アクション',d.action||0,40);
+    h += sbRow('関心軸',d.focus||0,25);
+    h += sbRow('裏取り',d.evidence||0,15);
+    h += sbRow('鮮度',d.recency||0,12);
+    h += sbRow('ブランド',d.brand||0,8);
     h += '</div></div></div></td></tr>';
   });
   h += '</tbody></table></div></div>';
   return h;
+}
+
+// 除外ログ — ゲートが効きすぎていないかを人が毎日検証するための画面。
+// 「本来通すべきものが落ちていないか」をここで確認する。
+function renderExcluded(){
+  var el = document.getElementById('page-excluded');
+  if(!el) return;
+  var q = document.getElementById('search').value.toLowerCase();
+  var list = EXCLUDED.filter(function(e){
+    if(!q) return true;
+    return ((e.title||'')+(e.company||'')+(e.kind||'')).toLowerCase().indexOf(q) !== -1;
+  });
+
+  var byKind = {};
+  EXCLUDED.forEach(function(e){ byKind[e.kind||'?'] = (byKind[e.kind||'?']||0)+1; });
+  var kinds = Object.keys(byKind).sort(function(a,b){ return byKind[b]-byKind[a]; });
+
+  var h = '<div class="table-wrap"><div class="section-title">除外ログ ('+EXCLUDED.length+'件)</div>';
+  h += '<div style="padding:10px 14px;font-size:0.8rem;color:var(--text-light);line-height:1.7">'
+     + '商品アクションが見つからなかった、あるいはノイズ辞書に当たったため本線から外した見出しです。'
+     + '<strong>本来拾うべきものがここに落ちていないか</strong>を確認するための画面です。'
+     + '見つけたら relevance.py の辞書を直してください。</div>';
+
+  h += '<div style="padding:0 14px 10px">';
+  kinds.forEach(function(k){
+    h += '<span class="tag">'+esc(k)+' '+byKind[k]+'</span> ';
+  });
+  h += '</div>';
+
+  h += '<div style="overflow-x:auto"><table><thead><tr>'
+     + '<th>除外理由</th><th>会社名</th><th>日付</th><th>見出し</th>'
+     + '</tr></thead><tbody>';
+  list.forEach(function(e){
+    var t = e.url ? '<a href="'+e.url+'" target="_blank" rel="noopener">'+esc(e.title)+'</a>' : esc(e.title);
+    h += '<tr><td class="company-cell">'+esc(e.kind)+'</td>'
+       + '<td class="company-cell">'+esc(e.company)+'</td>'
+       + '<td class="date-cell">'+esc(e.date)+'</td>'
+       + '<td class="title-cell">'+t+'</td></tr>';
+  });
+  h += '</tbody></table></div></div>';
+  el.innerHTML = h;
 }
 
 function sbRow(label,val,max){
@@ -695,6 +791,7 @@ function refresh(){
   document.getElementById('page-catC').innerHTML = buildTable(getFiltered('C'), 'カテゴリC: プレスリリース');
   renderCharts();
   renderHealth();
+  renderExcluded();
   // ヘルスアラートバッジ
   var errCnt = (HEALTH.summary.error||0) + (HEALTH.summary.warning||0);
   var badge = document.getElementById('nc-alert');
@@ -706,7 +803,7 @@ function refresh(){
 
 function go(page){
   currentPage = page;
-  ['ranking','catA','catB','catC','charts','health'].forEach(function(p){
+  ['ranking','catA','catB','catC','charts','health','excluded'].forEach(function(p){
     document.getElementById('page-'+p).style.display = p===page?'block':'none';
   });
   document.querySelectorAll('.nav-item').forEach(function(el,i){
@@ -715,6 +812,7 @@ function go(page){
   if(event && event.target) event.target.classList.add('active');
   if(page==='charts') renderCharts();
   if(page==='health') renderHealth();
+  if(page==='excluded') renderExcluded();
   // モバイル: サイドバー閉じる
   document.getElementById('sidebar').classList.remove('open');
   document.getElementById('overlay').classList.remove('show');
@@ -900,19 +998,42 @@ function triggerRefresh(){
 </html>"""
 
 
+def _slim_facts(facts: dict) -> dict:
+    """ページに埋め込む事実を必要な分だけに絞る。
+
+    本文全文や長い抜粋は載せない（公開リポジトリで配信されるページのため）。
+    """
+    if not facts:
+        return {}
+    return {
+        "product_names": facts.get("product_names", [])[:2],
+        "product_kind":  facts.get("product_kind", ""),
+        "payment":       facts.get("payment", ""),
+        "currencies":    facts.get("currencies", []),
+        "rates":         facts.get("rates", [])[:4],
+        "rate_change":   facts.get("rate_change"),
+        "sale_start":    facts.get("sale_start", ""),
+        "channels":      facts.get("channels", []),
+        "banks":         facts.get("banks", [])[:6],
+    }
+
+
 def generate_html_report(
     categorized: dict[str, list[dict]],
     filename: str | None = None,
     gh_owner: str = "",
     gh_repo: str = "",
+    excluded: list[dict] | None = None,
 ) -> str:
     """スコアリング済みデータからスタンドアロンHTMLレポートを生成
 
     Args:
-        categorized: カテゴリ別エントリデータ
+        categorized: カテゴリ別エントリデータ（本線＋周辺）
         filename: 出力ファイル名 (省略時は自動生成)
         gh_owner: GitHubユーザー名 (GitHub Pages連携用)
         gh_repo: GitHubリポジトリ名 (GitHub Pages連携用)
+        excluded: 関連性ゲートで除外されたエントリ（理由付き）。
+                  「除外ログ」タブに出し、ゲートの効きを人が検証できるようにする。
     """
 
     os.makedirs(OUTPUT_DIR, exist_ok=True)
@@ -940,11 +1061,37 @@ def generate_html_report(
                 "action_type": e.get("action_type", ""),
                 "commentary": e.get("commentary", ""),
                 "reason": e.get("reason", ""),
+                # ── v4 で追加した層 ──
+                "tier": e.get("tier", "PRODUCT"),
+                "focus_labels": e.get("focus_labels", []),
+                "evidence_labels": e.get("evidence_labels", []),
+                "fact_line": e.get("fact_line", ""),
+                "implication": e.get("implication", ""),
+                "comparison": e.get("comparison", ""),
+                "body_status": e.get("body_status", ""),
+                "first_seen": e.get("first_seen", ""),
+                "facts": _slim_facts(e.get("facts") or {}),
             }
             all_entries.append(ec)
-    all_entries.sort(key=lambda x: x.get("score", 0), reverse=True)
+    # 本線を上に、その中でスコア降順
+    all_entries.sort(key=lambda x: (0 if x.get("tier") == "PRODUCT" else 1,
+                                    -x.get("score", 0)))
 
     json_data = json.dumps(all_entries, ensure_ascii=False)
+
+    # 除外ログ（見出し・理由・種別だけ。ページ肥大を避けるため本文は載せない）
+    excluded_payload = [
+        {
+            "title":   e.get("title", ""),
+            "company": e.get("company", ""),
+            "date":    e.get("date", ""),
+            "url":     e.get("url", ""),
+            "kind":    e.get("noise_kind", ""),
+            "reason":  e.get("reason", ""),
+        }
+        for e in (excluded or [])
+    ]
+    excluded_json = json.dumps(excluded_payload, ensure_ascii=False)
     now = datetime.now().strftime("%Y/%m/%d %H:%M")
     period = f"{DATE_FROM} - {DATE_TO}"
 
@@ -973,6 +1120,7 @@ def generate_html_report(
 
     html = HTML_TEMPLATE
     html = html.replace("/*DATA_JSON*/[]", json_data)
+    html = html.replace("/*EXCLUDED_JSON*/[]", excluded_json)
     html = html.replace(
         '/*HEALTH_JSON*/{"summary":{"total":0,"ok":0,"warning":0,"error":0},"companies":[],"generated_at":""}',
         health_json,

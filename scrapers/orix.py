@@ -9,7 +9,9 @@ API情報（micro.js から取得）:
   API Key    : R7XEJFS5lYE61714OHVb26kIZdnXLnmpUnGu（公開済みキー）
 """
 
+import html
 import logging
+import re
 from datetime import datetime, timezone
 
 import requests
@@ -86,20 +88,34 @@ class OrixScraper(BaseScraper):
         return entries
 
     def _item_to_entry(self, item: dict) -> dict | None:
-        """microCMS のアイテム辞書をエントリ辞書に変換する。"""
-        title = item.get("title", "").strip()
+        """microCMS のアイテム辞書をエントリ辞書に変換する。
+
+        2026年途中でスキーマが変わり、以下に追随する必要が生じた（v4で修正）:
+          - 見出しが "title" → "new_title"（値は "<p>…</p>" で包まれる）
+          - link が [{"fieldId":"url", "url":…}] だけでなく
+                    [{"fieldId":"file","file":{"url":…}}] を取るようになった
+        旧スキーマも読めるよう、両方を順に見る。
+        """
+        title = (item.get("title") or "").strip()
+        if not title:
+            raw = item.get("new_title") or ""
+            title = re.sub(r"<[^>]+>", "", raw)          # <p> 等を除去
+            title = html.unescape(title).strip()
         if not title:
             return None
 
         # published_at: "2026-03-24T15:00:00.000Z"
-        pub_raw  = item.get("published_at", "")
+        pub_raw  = item.get("published_at") or item.get("publishedAt") or ""
         date_str = pub_raw[:10] if pub_raw else ""     # → "2026-03-24"
 
-        # URL: link フィールドは [{"fieldId":"url","url":"/about/news/..."}]
-        link_list = item.get("link", [])
+        # URL: fieldId により url / file のどちらに入るかが変わる
         href = ""
-        if link_list and isinstance(link_list, list):
-            href = link_list[0].get("url", "")
+        for link in item.get("link") or []:
+            if not isinstance(link, dict):
+                continue
+            href = link.get("url") or (link.get("file") or {}).get("url") or ""
+            if href:
+                break
         if href and not href.startswith("http"):
             href = _BASE_URL + href
 

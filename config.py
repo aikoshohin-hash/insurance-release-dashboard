@@ -21,8 +21,49 @@ USER_AGENT = (
     "Chrome/124.0.0.0 Safari/537.36"
 )
 
+# ブラウザ一式ヘッダ
+#  Akamai / Incapsula 系 WAF は「ヘッダ群の総合的なブラウザらしさ」で判定するため、
+#  User-Agent だけを差し替えても突破できない（Accept が特に効く）。
+#  アフラック生命が手元では取得でき CI からだけ 0 件になる事象への対処。
+#  Accept-Encoding は送らない（自動展開しないクライアントでの事故を避けるため）。
+BROWSER_HEADERS = {
+    "User-Agent": USER_AGENT,
+    "Accept": (
+        "text/html,application/xhtml+xml,application/xml;q=0.9,"
+        "image/avif,image/webp,image/apng,*/*;q=0.8"
+    ),
+    "Accept-Language": "ja,en-US;q=0.9,en;q=0.8",
+    "Sec-Fetch-Dest": "document",
+    "Sec-Fetch-Mode": "navigate",
+    "Sec-Fetch-Site": "none",
+    "Sec-Fetch-User": "?1",
+    "Upgrade-Insecure-Requests": "1",
+}
+
 # ── 抽出期間 ──
-DATE_FROM = date(2025, 10, 1)
+#  v3 は date(2025,10,1) をハードコードしていたため、窓が延び続けて
+#  11か月・113件が毎朝ほぼ同じ顔で並ぶ状態になっていた。
+#  v4 はローリング窓にする（LOOKBACK_MONTHS で調整可能）。
+LOOKBACK_MONTHS = int(os.environ.get("LOOKBACK_MONTHS", "12"))
+
+
+def _months_ago(months: int, base: date | None = None) -> date:
+    """base から months か月前の同日（月末調整あり）を返す。"""
+    b = base or date.today()
+    total = (b.year * 12 + (b.month - 1)) - months
+    y, m = divmod(total, 12)
+    m += 1
+    # 月末調整（3/31 の3か月前は 12/31、2月は末日に丸める）
+    day = b.day
+    while day > 28:
+        try:
+            return date(y, m, day)
+        except ValueError:
+            day -= 1
+    return date(y, m, day)
+
+
+DATE_FROM = _months_ago(LOOKBACK_MONTHS)
 DATE_TO = date.today()
 
 # ── Google Sheets ──

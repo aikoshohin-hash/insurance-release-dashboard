@@ -10,7 +10,8 @@ from urllib.parse import urljoin
 import requests
 from bs4 import BeautifulSoup
 
-from config import REQUEST_DELAY, REQUEST_TIMEOUT, USER_AGENT
+from config import REQUEST_DELAY, REQUEST_TIMEOUT, BROWSER_HEADERS
+from enricher import LegacyTLSAdapter
 
 logger = logging.getLogger(__name__)
 
@@ -24,7 +25,8 @@ class BaseScraper(ABC):
 
     def __init__(self):
         self.session = requests.Session()
-        self.session.headers.update({"User-Agent": USER_AGENT})
+        self.session.headers.update(BROWSER_HEADERS)
+        self.session.mount("https://", LegacyTLSAdapter())
         self.session.verify = True
         self._last_request_time = 0.0
 
@@ -40,17 +42,15 @@ class BaseScraper(ABC):
         try:
             resp = self.session.get(url, timeout=REQUEST_TIMEOUT)
             resp.raise_for_status()
-        except requests.exceptions.SSLError:
-            # SSL失敗時はverify=Falseで再試行
-            logger.warning(f"[{self.company_name}] SSL再試行: {url}")
-            try:
-                import urllib3
-                urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
-                resp = self.session.get(url, timeout=REQUEST_TIMEOUT, verify=False)
-                resp.raise_for_status()
-            except requests.RequestException as e2:
-                logger.warning(f"[{self.company_name}] リクエスト失敗: {url} -> {e2}")
-                return BeautifulSoup("", "html.parser")
+        except requests.exceptions.SSLError as e:
+            # ここで verify=False にしてはいけない。
+            # ソニー生命等の handshake failure は証明書検証の問題ではなく
+            # **暗号スイート要件**であり、verify=False では解決しないまま
+            # 中間者攻撃への耐性だけを失う（product-scout での実測）。
+            # セッションには既に LegacyTLSAdapter を噛ませてあるので、
+            # ここまで来た SSL エラーは素直に失敗として扱う。
+            logger.warning(f"[{self.company_name}] SSL失敗: {url} -> {e}")
+            return BeautifulSoup("", "html.parser")
         except requests.RequestException as e:
             logger.warning(f"[{self.company_name}] リクエスト失敗: {url} -> {e}")
             return BeautifulSoup("", "html.parser")
