@@ -1,4 +1,4 @@
-"""notifier.py の不変条件テスト（実サイトにもメールサーバにも触れない）
+"""notifier.py の不変条件テスト（実サイトにも GitHub にも触れない）
 
 実行: python tools_test_notifier.py
 """
@@ -6,9 +6,6 @@ import os
 import sys
 import tempfile
 from datetime import date
-from email import message_from_string
-from email.header import decode_header, make_header
-from unittest import mock
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 import notifier  # noqa: E402
@@ -18,7 +15,10 @@ notifier.DATA_DIR = TMP
 notifier.SEEN_PATH = os.path.join(TMP, "seen.json")
 notifier.OUTPUT_DIR = TMP
 notifier.NOTIFY_MD = os.path.join(TMP, "notify.md")
+notifier.NOTIFY_TITLE = os.path.join(TMP, "notify_title.txt")
 notifier.NOTIFY_JSON = os.path.join(TMP, "notify.json")
+notifier.TEST_MD = os.path.join(TMP, "notify_test.md")
+notifier.TEST_TITLE = os.path.join(TMP, "notify_test_title.txt")
 
 TODAY = date(2026, 9, 11)
 passed = failed = 0
@@ -32,6 +32,10 @@ def check(name, cond, detail=""):
     else:
         failed += 1
         print(f"  FAIL {name}  {detail}")
+
+
+def read(p):
+    return open(p, encoding="utf-8").read()
 
 
 def E(company, title, url, d="2026/09/10", tier="PRODUCT", **kw):
@@ -119,69 +123,43 @@ notifier.detect_new([p0], [], TODAY)
 check("区分対象外でも到着は観測したので検知日", p0.get("first_seen") == "2026-09-11",
       p0.get("first_seen"))
 
-print("12. 文面の組み立て")
+print("12. 件名と本文")
 subj = notifier.build_subject([new1], TODAY)
 check("件名に件数と日付", "新規1件" in subj and "2026/09/11" in subj, subj)
-html = notifier.build_html([dict(new1, title="<script>x</script>")])
-check("HTML がエスケープされる", "<script>" not in html)
-check("本文にダッシュボードURL", notifier.DASHBOARD_URL in notifier.build_text([new1]))
+md = notifier.build_markdown([new1])
+check("本文に原文URL", "https://n/2.pdf" in md)
+check("本文にダッシュボードURL", notifier.DASHBOARD_URL in md)
 
-print("13. SMTP 未設定なら送らない")
-with mock.patch.dict(os.environ, {}, clear=True):
-    check("設定なし→None", notifier.smtp_config() is None)
-    msg = notifier.notify([new1], {"baseline": False})
-    check("未設定メッセージ", "未設定" in msg, msg)
-    check("notify.md が出力される", os.path.exists(notifier.NOTIFY_MD))
+print("13. 見出しの @ でメンションが飛ばない")
+at = E("日本生命", "「＠nifty」ではなく @nifty と書かれたリリース", "https://n/at.pdf",
+       fact_line="@someone 宛")
+md = notifier.build_markdown([at])
+check("本文に半角 @ が残らない", "@" not in md.replace(notifier.DASHBOARD_URL, ""), md[:200])
 
-print("14. SMTP 設定ありなら送る（サーバはモック）")
-env = {"SMTP_HOST": "smtp.example.com", "SMTP_PORT": "465", "SMTP_USER": "u@example.com",
-       "SMTP_PASSWORD": "dummy", "MAIL_TO": "a@example.com, b@example.com"}
-with mock.patch.dict(os.environ, env, clear=True), \
-        mock.patch("smtplib.SMTP_SSL") as fake:
-    msg = notifier.notify([new1], {"baseline": False})
-    server = fake.return_value.__enter__.return_value
-    check("login された", server.login.called)
-    check("sendmail された", server.sendmail.called)
-    if server.sendmail.called:
-        frm, to, raw = server.sendmail.call_args[0]
-        check("宛先2件", to == ["a@example.com", "b@example.com"], to)
-        parsed = message_from_string(raw)
-        subj = str(make_header(decode_header(parsed["Subject"])))
-        check("日本語件名が復号できる", "保険リリース" in subj, subj)
-    check("送信メッセージ", "メール送信" in msg, msg)
+print("14. 新規ありの日は件名・本文を出力、0件の日は前回分を消す")
+msg = notifier.notify([new1], {"baseline": False})
+check("本文ファイル", os.path.exists(notifier.NOTIFY_MD), msg)
+check("件名ファイル", read(notifier.NOTIFY_TITLE).startswith("【保険リリース】新規1件"))
+msg = notifier.notify([], {"baseline": False})
+check("0件で本文を消す", not os.path.exists(notifier.NOTIFY_MD), msg)
+check("0件で件名を消す", not os.path.exists(notifier.NOTIFY_TITLE))
 
-print("15. 送信に失敗しても例外を投げない（デプロイを止めない）")
-with mock.patch.dict(os.environ, env, clear=True), \
-        mock.patch("smtplib.SMTP_SSL", side_effect=OSError("connection refused")):
-    msg = notifier.notify([new1], {"baseline": False})
-    check("失敗を戻り値で返す", "失敗" in msg, msg)
+print("15. 大量の日は件数で切り、構造変更を疑う注記を付ける")
+many = [E("日本生命", f"「商品{i}」の発売", f"https://n/m{i}.pdf") for i in range(45)]
+md = notifier.build_markdown(many)
+check("掲載は上限まで", md.count("### ") == notifier.MAX_ISSUE_ITEMS, md.count("### "))
+check("残件数の注記", "ほか 15件" in md)
+check("Issue 本文の上限内", len(md) < 65000, len(md))
 
-print("16. テスト送信は台帳に触れず、本線上位を【テスト送信】で送る")
-before = open(notifier.SEEN_PATH, encoding="utf-8").read()
+print("16. テスト通知は台帳に触れず、本線上位を【テスト】で出力")
+before = read(notifier.SEEN_PATH)
 pool = [dict(new1, score=90), dict(orix2, score=80), dict(peri, score=99),
         dict(base[0], score=70), dict(base[1], score=60)]
-with mock.patch.dict(os.environ, env, clear=True), \
-        mock.patch("smtplib.SMTP_SSL") as fake:
-    msg = notifier.send_test(pool)
-    server = fake.return_value.__enter__.return_value
-    raw = server.sendmail.call_args[0][2] if server.sendmail.called else ""
-    subj = str(make_header(decode_header(message_from_string(raw)["Subject"]))) if raw else ""
-    check("件名に【テスト送信】", subj.startswith("【テスト送信】"), subj)
-    check("本線3件（周辺は除く）", "3件" in msg, msg)
-check("台帳は変わらない", open(notifier.SEEN_PATH, encoding="utf-8").read() == before)
-with mock.patch.dict(os.environ, {}, clear=True):
-    check("Secrets 未登録なら送らない", "未登録" in notifier.send_test(pool))
-
-print("17. 失敗内容（公開Issueに載る）からアドレスを伏せる")
-import smtplib as _s
-err = _s.SMTPRecipientsRefused({"a@example.com": (550, b"no such user"),
-                                "b@example.com": (550, b"no such user")})
-with mock.patch.dict(os.environ, env, clear=True), \
-        mock.patch("smtplib.SMTP_SSL", side_effect=err):
-    notifier.notify([new1], {"baseline": False})
-text = open(os.path.join(TMP, "notify_error.txt"), encoding="utf-8").read()
-check("宛先アドレスが残らない", "@example.com" not in text, text)
-check("エラー種別は残る", "SMTPRecipientsRefused" in text, text)
+msg = notifier.write_test_notify(pool)
+check("件名に【テスト】", read(notifier.TEST_TITLE).startswith("【テスト】【保険リリース】"))
+check("本線3件（周辺は除く）", read(notifier.TEST_MD).count("### ") == 3, msg)
+check("テストである旨の注記", "これはテスト通知です" in read(notifier.TEST_MD))
+check("台帳は変わらない", read(notifier.SEEN_PATH) == before)
 
 print(f"\n結果: {passed} passed / {failed} failed")
 sys.exit(1 if failed else 0)

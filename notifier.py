@@ -3,7 +3,7 @@
 【なぜ台帳が要るのか】
     v3 の「新着」は *リリース日付が3日以内* という代用品だった。これだと
       ・2週間前の日付で今日サイトに載った記事は一度も新着にならない
-      ・同じ記事が3日間ずっと新着として出続ける（＝毎日同じメールが届く）
+      ・同じ記事が3日間ずっと新着として出続ける（＝毎日同じ通知が届く）
     となり、通知の土台として使えない。
 
     そこで data/seen.json に「一度でも見たリリース」を初回検知日付きで記録し、
@@ -24,10 +24,15 @@
     6. 除外（ノイズ）判定のエントリも台帳には記録する。
        ゲートの辞書を直して本線に昇格したときに「新規」扱いされないようにするため。
 
-【送信】
-    SMTP の設定（環境変数）があればメールを送る。無ければ送らず、
-    本文を output/notify.md に書き出すだけにする（GitHub Issue 起票用）。
-    パスワード類はコードにもリポジトリにも置かない。GitHub Secrets 経由でのみ受け取る。
+【通知の経路】
+    新規があった日だけ output/notify.md（本文）と output/notify_title.txt（件名）を
+    書き出し、ワークフローがそれを GitHub Issue として起票する。
+    GitHub がリポジトリを Watch しているアカウントの登録メールへ通知メールを送る。
+
+    当初は Gmail の SMTP（アプリパスワード）で直送する設計だったが、
+    アプリパスワードは送信専用ではなくメールボックスの読み取りにも使え、
+    漏れたときの被害が用途に比べて大きすぎるため採らなかった（2026-09-11 ユーザー判断）。
+    この方式は秘密情報を一切使わない。
 """
 
 from __future__ import annotations
@@ -36,14 +41,8 @@ import json
 import logging
 import os
 import re
-import smtplib
-import ssl
 import unicodedata
-from datetime import date, datetime, timedelta
-from email.mime.multipart import MIMEMultipart
-from email.mime.text import MIMEText
-from email.utils import formataddr
-from html import escape
+from datetime import date, timedelta
 
 logger = logging.getLogger(__name__)
 
@@ -52,9 +51,16 @@ DATA_DIR     = os.path.join(PROJECT_DIR, "data")
 SEEN_PATH    = os.path.join(DATA_DIR, "seen.json")
 OUTPUT_DIR   = os.path.join(PROJECT_DIR, "output")
 NOTIFY_MD    = os.path.join(OUTPUT_DIR, "notify.md")
+NOTIFY_TITLE = os.path.join(OUTPUT_DIR, "notify_title.txt")
 NOTIFY_JSON  = os.path.join(OUTPUT_DIR, "notify.json")
+TEST_MD      = os.path.join(OUTPUT_DIR, "notify_test.md")
+TEST_TITLE   = os.path.join(OUTPUT_DIR, "notify_test_title.txt")
 
 FRESH_DAYS   = int(os.environ.get("NOTIFY_FRESH_DAYS", "14"))
+
+# Issue 本文の上限は 65,536 字。1件あたり 600 字程度なので余裕を見て件数で切る。
+# 大量に来た日はサイト構造の変化を疑うべき日でもある。
+MAX_ISSUE_ITEMS = 30
 
 # 通知に載せる範囲。PRODUCT=商品リリースのみ / PERIPHERAL=周辺も含める
 NOTIFY_TIERS = set(
@@ -149,6 +155,10 @@ def detect_new(
         url = e.get("url") or ""
         return (url and url in by_url) or (_title_key(e) in by_title)
 
+    def _rec_of(e: dict) -> dict | None:
+        url = e.get("url") or ""
+        return (by_url.get(url) if url else None) or by_title.get(_title_key(e))
+
     def _record(e: dict, tier: str, quiet: bool = False) -> None:
         rec = {
             "first_seen": today_s,
@@ -165,10 +175,6 @@ def detect_new(
         if url:
             by_url.setdefault(url, rec)
         by_title.setdefault(_title_key(e), rec)
-
-    def _rec_of(e: dict) -> dict | None:
-        url = e.get("url") or ""
-        return (by_url.get(url) if url else None) or by_title.get(_title_key(e))
 
     # 本線・周辺
     for e in entries:
@@ -226,7 +232,7 @@ def format_detect_report(stats: dict) -> str:
 
 
 # ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-#  文面
+#  文面（GitHub Issue = GitHub が Markdown を HTML にしてメールで届ける）
 # ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
 def build_subject(items: list[dict], today: date | None = None) -> str:
@@ -242,87 +248,68 @@ def build_subject(items: list[dict], today: date | None = None) -> str:
     return head + (f"（{' / '.join(tail)}）" if tail else "") + f" {today:%Y/%m/%d}"
 
 
-def _one_line_facts(e: dict) -> str:
-    return e.get("fact_line") or ""
+def _safe(text: str) -> str:
+    """Issue 本文に他社サイトの文字列をそのまま流し込むための無害化。
+
+    「@xxx」は GitHub 上で実在ユーザーへのメンションになり、その人に通知が飛ぶ。
+    リリース見出しに「@nifty」のような語が入ることがあるため全角に置き換える。
+    """
+    return (text or "").replace("@", "＠")
 
 
 def build_markdown(items: list[dict]) -> str:
-    lines = [f"新規に検知したリリース {len(items)}件（スコア順）", ""]
-    for e in items:
+    shown = items[:MAX_ISSUE_ITEMS]
+    lines = [f"新規に検知した商品リリース **{len(items)}件**（スコア順）", ""]
+    for e in shown:
         rank  = e.get("rank_label", "-")
         focus = " ".join(f"`{x}`" for x in (e.get("focus_labels") or []))
         act   = e.get("action_type") or ""
-        lines.append(f"### [{rank}] {e.get('company','')} — {e.get('title','')}")
+        lines.append(f"### [{rank}] {_safe(e.get('company',''))} — {_safe(e.get('title',''))}")
         meta = f"{e.get('date','')} ｜ {act}" + (f" ｜ {focus}" if focus else "")
         lines.append(meta)
-        if _one_line_facts(e):
-            lines.append(f"- 事実: {_one_line_facts(e)}")
+        lines.append("")
+        if e.get("fact_line"):
+            lines.append(f"- **事実**: {_safe(e['fact_line'])}")
         if e.get("implication"):
-            lines.append(f"- 含意: {e['implication']}")
+            lines.append(f"- **含意**: {_safe(e['implication'])}")
         if e.get("comparison"):
-            lines.append(f"- 比較: {e['comparison']}")
+            lines.append(f"- **比較**: {_safe(e['comparison'])}")
         if e.get("url"):
             lines.append(f"- 原文: {e['url']}")
         lines.append("")
+    if len(items) > len(shown):
+        lines.append(f"ほか {len(items) - len(shown)}件はダッシュボードで確認してください。"
+                     "一度にこれだけ来た日は、サイト側の構造変更も疑ってください。")
+        lines.append("")
     lines.append(f"ダッシュボード: {DASHBOARD_URL}")
+    lines.append("")
+    lines.append("<sub>GitHub Actions が自動起票。前回までに見たことのないリリースだけを通知します。"
+                 "読んだら Close してください。</sub>")
     return "\n".join(lines)
 
 
 def build_text(items: list[dict]) -> str:
-    """プレーンテキスト版（HTML を表示しないメーラー向け）。"""
-    md = build_markdown(items)
-    return md.replace("### ", "■ ").replace("`", "")
+    """プレーンテキスト版（ログ・確認用）。"""
+    return build_markdown(items).replace("### ", "■ ").replace("`", "").replace("**", "")
 
 
-_RANK_COLOR = {"S": "#c0392b", "A": "#d35400", "B": "#2c6fbb", "C": "#7f8c8d", "D": "#95a5a6"}
+def _write(path: str, text: str) -> None:
+    os.makedirs(OUTPUT_DIR, exist_ok=True)
+    with open(path, "w", encoding="utf-8", newline="\n") as f:
+        f.write(text)
 
 
-def build_html(items: list[dict]) -> str:
-    rows = []
-    for e in items:
-        rank = e.get("rank_label", "-")
-        color = _RANK_COLOR.get(rank, "#7f8c8d")
-        badges = "".join(
-            f'<span style="background:#0b7a55;color:#fff;border-radius:3px;'
-            f'padding:1px 6px;margin-right:4px;font-size:12px">{escape(x)}</span>'
-            for x in (e.get("focus_labels") or [])
-        )
-        act = e.get("action_type") or ""
-        if act:
-            badges = (f'<span style="background:#1f3f77;color:#fff;border-radius:3px;'
-                      f'padding:1px 6px;margin-right:4px;font-size:12px">{escape(act)}</span>'
-                      + badges)
-        title = escape(e.get("title", ""))
-        if e.get("url"):
-            title = f'<a href="{escape(e["url"])}" style="color:#1a4f9c">{title}</a>'
-        detail = ""
-        for label, key in (("事実", "fact_line"), ("含意", "implication"), ("比較", "comparison")):
-            if e.get(key):
-                detail += (f'<div style="margin-top:4px;color:#333"><b>{label}:</b> '
-                           f'{escape(e[key])}</div>')
-        rows.append(
-            f'<tr><td style="vertical-align:top;padding:10px 8px;border-bottom:1px solid #e5e7eb">'
-            f'<span style="display:inline-block;min-width:22px;text-align:center;font-weight:700;'
-            f'color:#fff;background:{color};border-radius:3px">{escape(rank)}</span></td>'
-            f'<td style="padding:10px 8px;border-bottom:1px solid #e5e7eb;font-size:14px">'
-            f'<div style="color:#666;font-size:12px">{escape(e.get("company",""))} ｜ '
-            f'{escape(e.get("date",""))}</div>'
-            f'<div style="margin:3px 0;font-weight:600">{title}</div>'
-            f'<div>{badges}</div>{detail}</td></tr>'
-        )
-    return (
-        '<div style="font-family:Meiryo,\'Hiragino Sans\',sans-serif;max-width:760px">'
-        f'<p style="font-size:14px">新規に検知したリリース <b>{len(items)}件</b>（スコア順）</p>'
-        '<table style="border-collapse:collapse;width:100%">' + "".join(rows) + '</table>'
-        f'<p style="font-size:13px;margin-top:16px">ダッシュボード: '
-        f'<a href="{DASHBOARD_URL}">{DASHBOARD_URL}</a></p>'
-        '<p style="font-size:11px;color:#999">このメールは GitHub Actions から自動送信されています。'
-        '前回までに見たことのないリリースだけを通知します。</p></div>'
-    )
+def _remove(path: str) -> None:
+    if os.path.exists(path):
+        os.remove(path)
 
 
-def write_notify_files(items: list[dict], stats: dict) -> None:
-    """通知内容を output/ に書き出す（Issue 起票・Actions サマリー・検証用）。"""
+def notify(items: list[dict], stats: dict) -> str:
+    """新規があれば Issue 起票用の件名・本文を output/ に書き出す。
+
+    実際の起票はワークフローの gh issue create が行う（GITHUB_TOKEN のみで完結）。
+    新規0件の日は前回の出力を消しておく（古い本文で誤って起票しないため）。
+    """
     os.makedirs(OUTPUT_DIR, exist_ok=True)
     with open(NOTIFY_JSON, "w", encoding="utf-8") as f:
         json.dump(
@@ -330,126 +317,29 @@ def write_notify_files(items: list[dict], stats: dict) -> None:
              "stats": stats},
             f, ensure_ascii=False, indent=1,
         )
-    if items:
-        with open(NOTIFY_MD, "w", encoding="utf-8", newline="\n") as f:
-            f.write(build_markdown(items))
-    elif os.path.exists(NOTIFY_MD):
-        os.remove(NOTIFY_MD)
-
-
-# ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-#  送信
-# ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-
-def smtp_config() -> dict | None:
-    """環境変数から SMTP 設定を読む。必須が欠けていれば None。
-
-        SMTP_HOST      例: smtp.gmail.com
-        SMTP_PORT      例: 465（SSL）/ 587（STARTTLS）。既定 465
-        SMTP_USER      送信アカウント
-        SMTP_PASSWORD  アプリパスワード（GitHub Secrets からのみ渡す）
-        MAIL_TO        宛先。カンマ区切りで複数可
-        MAIL_FROM      差出人（省略時は SMTP_USER）
-    """
-    host = os.environ.get("SMTP_HOST", "").strip()
-    user = os.environ.get("SMTP_USER", "").strip()
-    pwd  = os.environ.get("SMTP_PASSWORD", "")
-    to   = [a.strip() for a in os.environ.get("MAIL_TO", "").split(",") if a.strip()]
-    if not (host and user and pwd and to):
-        return None
-    return {
-        "host": host,
-        "port": int(os.environ.get("SMTP_PORT", "465") or 465),
-        "user": user,
-        "password": pwd,
-        "to": to,
-        "from": os.environ.get("MAIL_FROM", "").strip() or user,
-    }
-
-
-def send_email(items: list[dict], cfg: dict, subject_prefix: str = "") -> None:
-    msg = MIMEMultipart("alternative")
-    msg["Subject"] = subject_prefix + build_subject(items)
-    msg["From"]    = formataddr(("保険リリース通知", cfg["from"]))
-    msg["To"]      = ", ".join(cfg["to"])
-    msg.attach(MIMEText(build_text(items), "plain", "utf-8"))
-    msg.attach(MIMEText(build_html(items), "html", "utf-8"))
-
-    ctx = ssl.create_default_context()
-    if cfg["port"] == 465:
-        with smtplib.SMTP_SSL(cfg["host"], cfg["port"], context=ctx, timeout=30) as s:
-            s.login(cfg["user"], cfg["password"])
-            s.sendmail(cfg["from"], cfg["to"], msg.as_string())
-    else:
-        with smtplib.SMTP(cfg["host"], cfg["port"], timeout=30) as s:
-            s.starttls(context=ctx)
-            s.login(cfg["user"], cfg["password"])
-            s.sendmail(cfg["from"], cfg["to"], msg.as_string())
-
-
-def notify(items: list[dict], stats: dict) -> str:
-    """通知の実行。戻り値は結果の一行説明。
-
-    送信に失敗しても例外を上に投げない（台帳は既に保存済みなので、
-    ここで落とすとダッシュボードのデプロイまで止まってしまうため）。
-    失敗は戻り値とログで知らせ、CI 側で失敗 Issue にする。
-    """
-    write_notify_files(items, stats)
     if not items:
+        _remove(NOTIFY_MD)
+        _remove(NOTIFY_TITLE)
         return "通知なし（新規0件）"
-
-    cfg = smtp_config()
-    if cfg is None:
-        return f"メール未設定のため送信せず（新規{len(items)}件の本文は output/notify.md）"
-
-    try:
-        send_email(items, cfg)
-        return f"メール送信: {len(items)}件 → {len(cfg['to'])}宛先"
-    except Exception as e:
-        _record_failure(e, cfg)
-        return f"メール送信失敗: {type(e).__name__}"
+    _write(NOTIFY_MD, build_markdown(items))
+    _write(NOTIFY_TITLE, build_subject(items))
+    return f"Issue 起票用に出力: 新規{len(items)}件（output/notify.md）"
 
 
-def _redact(text: str, cfg: dict) -> str:
-    """エラー文から送信元・宛先のアドレスを伏せる。
-
-    失敗内容は PUBLIC リポジトリの Issue に載る。SMTPRecipientsRefused などは
-    宛先アドレスを例外文に含むため、そのまま書くとアドレスが公開されてしまう。
-    """
-    out = text
-    for addr in [cfg.get("user", ""), cfg.get("from", "")] + list(cfg.get("to", [])):
-        if addr:
-            out = out.replace(addr, "***")
-    # 念のため、残ったメールアドレス形式もすべて伏せる
-    return re.sub(r"[\w.+-]+@[\w-]+(\.[\w-]+)+", "***", out)
-
-
-def _record_failure(e: Exception, cfg: dict) -> None:
-    msg = _redact(f"{type(e).__name__}: {e}", cfg)
-    logger.error(f"メール送信失敗: {msg}")
-    os.makedirs(OUTPUT_DIR, exist_ok=True)
-    with open(os.path.join(OUTPUT_DIR, "notify_error.txt"), "w", encoding="utf-8") as f:
-        f.write(msg + "\n")
-
-
-def send_test(entries: list[dict], n: int = 3) -> str:
-    """配信経路の疎通確認。台帳には触れず、現在の本線上位 n 件を【テスト送信】として送る。
+def write_test_notify(entries: list[dict], n: int = 3) -> str:
+    """通知経路の疎通確認用。台帳には触れず、現在の本線上位 n 件を【テスト】として出力する。
 
     台帳に全件が既知として載っている状態では手動実行しても新規0件になり、
-    実際に Gmail から届くかを確かめる手段が無いため。
+    実際に通知メールが届くかを確かめる手段が無いため。
     """
-    cfg = smtp_config()
-    if cfg is None:
-        return "テスト送信: Secrets 未登録のため送らず（SMTP_USER / SMTP_PASSWORD / MAIL_TO）"
     sample = sorted(
         [e for e in entries if e.get("tier") == "PRODUCT"],
         key=lambda x: -x.get("score", 0),
     )[:n]
     if not sample:
-        return "テスト送信: 送る材料（本線のリリース）が0件"
-    try:
-        send_email(sample, cfg, subject_prefix="【テスト送信】")
-        return f"テスト送信: {len(sample)}件 → {len(cfg['to'])}宛先"
-    except Exception as e:
-        _record_failure(e, cfg)
-        return f"テスト送信失敗: {type(e).__name__}"
+        return "テスト通知: 材料（本線のリリース）が0件"
+    _write(TEST_MD, "> **これはテスト通知です。** 通知経路の確認のため、"
+                    "現在の上位を新規扱いで流しています（台帳は変わりません）。\n\n"
+                    + build_markdown(sample))
+    _write(TEST_TITLE, "【テスト】" + build_subject(sample))
+    return f"テスト通知: {len(sample)}件を output/notify_test.md に出力"

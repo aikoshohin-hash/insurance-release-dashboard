@@ -18,9 +18,10 @@
   │                                   商品名・通貨・利率・チャネル・取扱金融機関を抽出
   ├─ スコアリング（scorer.py）…… アクション40 + 関心軸25 + 裏取り15 + 鮮度12 + ブランド8
   ├─ 分析（analyzer.py）………… 事実 / 含意 / 利率の横比較 を組み立てる
-  ├─ 新規検知（notifier.py）…… data/seen.json と突き合わせ、未知のものだけ Gmail で通知
+  ├─ 新規検知（notifier.py）…… data/seen.json と突き合わせ、未知の商品リリースだけを抽出
   │
   ├─ data/ を main ブランチに書き戻し（本文キャッシュ・検知台帳）
+  ├─ 新規があれば Issue を起票 → GitHub が通知メールを送る
   └─ index.html を gh-pages ブランチへ → GitHub Pages が配信
 ```
 
@@ -45,7 +46,14 @@
 |---|---|
 | 手元の git / gh | `gh` CLI の OAuth トークン（Windows キーリング保存）。`gh.exe` は `test\gh_cli_tmp\bin\` にあり PATH 未登録 |
 | Actions の push / Pages デプロイ / Issue 起票 | 実行ごとに GitHub が自動発行する `GITHUB_TOKEN`。登録作業なし |
-| 通知メール | GitHub Secrets に登録した Gmail アプリパスワード（下記 §3） |
+
+**秘密情報（Secrets）は1つも使っていません。**
+
+### GitHub の設定画面が 404 になるとき
+
+ブラウザで `aikoshohin-hash` としてログインしていません。GitHub は権限の無い人が設定ページを開くと
+「存在しない」として 404 を返します。画面上部に「Platform / Solutions / Pricing」が並んでいたら未ログインの表示です。
+右上の「Sign in」→「Continue with Google」でログインしてください。
 
 ---
 
@@ -65,76 +73,58 @@ python main.py --no-gsheet
 
 Windows でコンソールが文字化けする場合は `set PYTHONIOENCODING=utf-8`。
 
-> **注意**: ローカル実行でも `data/seen.json`（検知台帳）が更新されます。
+> **注意**: ローカル実行でも `data/seen.json`（検知台帳）が作られます。
 > 手元の台帳を push すると CI の台帳を上書きするので、**data/ を手元からコミットしない**こと。
-> CI が唯一の書き手です。
+> CI が唯一の書き手です。手元で走らせたら data/ は消してから `git pull` してください。
 
 ---
 
-## 3. 新規検知メール（Gmail）の設定
+## 3. 新規検知の通知（GitHub Issue → 通知メール）
 
-新規の商品リリースを検知した朝だけ、Gmail から通知メールが届きます。
-何もない日は送りません。設定しなければ送信はスキップされ、ダッシュボードの更新は通常どおり続きます。
+新規の商品リリースを検知した朝だけ、`new-release` ラベルの Issue が1件立ちます。
+GitHub はリポジトリを Watch しているアカウントの登録メールへ、その Issue を通知メールとして送ります。
+Issue の本文（事実・含意・原文リンク）はメール本文にそのまま入ります。何もない日は何も起きません。
 
-### 手順（パスワードを扱うため、ご自身で行ってください）
+### 当初案（Gmail + アプリパスワード）を採らなかった理由
 
-**① 送信元の Gmail で 2段階認証を有効にする**
-https://myaccount.google.com/security → 「2段階認証プロセス」
+アプリパスワードは送信専用ではなく、Gmail のメール受信（IMAP）にも使えます。
+漏れたときにメールボックスを読まれうるうえ、2段階認証も通らずに使えるため、
+「自分に通知を送る」という用途に対して被害範囲が大きすぎると判断しました（2026-09-11）。
+この方式は秘密情報を一切使いません。
 
-**② アプリパスワードを発行する**
-https://myaccount.google.com/apppasswords → アプリ名に `insurance-release` など → 作成
-表示された **16文字**を控える（この画面を閉じると二度と表示されない）。
+### メールが届くための条件（最初に一度だけ確認）
 
-**③ GitHub にシークレットを3つ登録する**
-https://github.com/aikoshohin-hash/insurance-release-dashboard/settings/secrets/actions
-→ 「New repository secret」
+1. **このリポジトリを Watch している**
+   リポジトリのページ右上「Watch」が「All Activity」（または「Custom」で Issues にチェック）になっていること。
+   自分で作ったリポジトリは既定で Watch 済みです。
+2. **Watch の通知がメールで届く設定になっている**
+   https://github.com/settings/notifications → 「Subscriptions」の **Watching** で「Email」にチェック。
+3. **送り先のメールアドレス**
+   同じ画面の「Default notifications email」に表示されているアドレスに届きます。
 
-> **このページが 404 になる場合** — ブラウザで `aikoshohin-hash` としてログインしていません。
-> GitHub は権限の無い人が設定ページを開くと「存在しない」として 404 を返します。
-> 画面上部に「Platform / Solutions / Pricing」が並んでいたら未ログインの表示です。
-> 右上の「Sign in」→「Continue with Google」でログインしてから開き直すか、下のコマンドで登録してください。
+同じアカウントの `product-scout` が毎朝立てている「[scout] … 商品の棚に変化」の Issue のメールが
+届いていれば、1〜3 はすでに満たされています。
 
-| Name | Secret に入れる値 |
-|---|---|
-| `SMTP_USER` | 送信元の Gmail アドレス |
-| `SMTP_PASSWORD` | ②の16文字（スペースは詰める） |
-| `MAIL_TO` | 宛先。複数ならカンマ区切り（`a@example.com,b@example.com`） |
+### テスト通知で動作確認
 
-コマンドで登録する場合（この PC の gh はログイン済みなので、ブラウザのログインは不要）。
-1行ずつ実行すると `? Paste your secret` と聞かれるので値を貼り付けて Enter。値は画面にも履歴にも残りません。
-gh は PATH に入っていないためフルパスで呼びます（PowerShell の場合）:
+台帳に全件が既知として載っているため、普通に手動実行しても新規0件で Issue は立ちません。
+疎通確認は **テスト通知** で行います（台帳は変わりません）:
 
-```powershell
-& "C:\Users\DFLDXPT\Claude code\test\gh_cli_tmp\bin\gh.exe" secret set SMTP_USER     --repo aikoshohin-hash/insurance-release-dashboard
-& "C:\Users\DFLDXPT\Claude code\test\gh_cli_tmp\bin\gh.exe" secret set SMTP_PASSWORD --repo aikoshohin-hash/insurance-release-dashboard
-& "C:\Users\DFLDXPT\Claude code\test\gh_cli_tmp\bin\gh.exe" secret set MAIL_TO       --repo aikoshohin-hash/insurance-release-dashboard
-```
-
-**④ テストメールで動作確認**
-台帳に全件が既知として載っているため、普通に手動実行しても新規0件でメールは来ません。
-疎通確認は **テスト送信** で行います（台帳は変わりません）:
-
-Actions タブ → 「Fetch & Deploy Report」→「Run workflow」→ **`test_mail` にチェック** → Run。
+Actions タブ → 「Fetch & Deploy Report」→「Run workflow」→ **`test_notify` にチェック** → Run。
 またはコマンドで:
 
 ```powershell
-& "C:\Users\DFLDXPT\Claude code\test\gh_cli_tmp\bin\gh.exe" workflow run fetch_and_deploy.yml --repo aikoshohin-hash/insurance-release-dashboard -f test_mail=true
+& "C:\Users\DFLDXPT\Claude code\test\gh_cli_tmp\bin\gh.exe" workflow run fetch_and_deploy.yml --repo aikoshohin-hash/insurance-release-dashboard -f test_notify=true
 ```
 
-件名が「【テスト送信】【保険リリース】…」のメールが、現在の上位3件の内容で届けば成功です。
+件名に「【テスト】【保険リリース】…」を含むメールが届けば成功です。確認したらその Issue は Close してください。
 
-### 安全性
+### 運用
 
-- シークレットは Actions の実行時にだけ環境変数として渡され、ログには `***` と伏せ字で出る
-- このワークフローには `pull_request` トリガーが無く、またフォークからの PR にはシークレットが渡らない。
-  PUBLIC リポジトリでも外部から読まれない
-- アプリパスワードは Gmail 送信にしか使えず、Google アカウントのパスワードとは別物。
-  不要になったら②の画面から個別に削除できる
-
-### 送信に失敗したら
-
-`notify-failure` ラベルの Issue が自動で立ちます（本文に、送るはずだった内容が入っています）。
-Google アカウントのパスワードを変えるとアプリパスワードは失効するので、②③をやり直してください。
+- 読んだ Issue は **Close** してください。未読管理の代わりになります
+- 起票に失敗した日はワークフローが失敗扱いになり、GitHub の「Run failed」メールで気づけます
+- 公開リポジトリの Issue なので、中身は公開ダッシュボードと同じ範囲（見出し・抽出した事実・原文URL）に留めています。
+  見出しに `@` があると実在ユーザーへのメンションになるため、全角 `＠` に置き換えています
 
 ### 通知の判定ルール（notifier.py）
 
@@ -145,6 +135,7 @@ Google アカウントのパスワードを変えるとアプリパスワード�
 | リリース日付が14日より古い | 登録のみ（サイトがアーカイブを再掲した日の大量通知を防ぐ） |
 | 周辺（事務サービス等）・除外 | 登録のみ。通知は商品リリースだけ |
 | URL が変わっても会社名＋見出しが同じ | 既知扱い |
+| 1日に30件を超えた | 上位30件だけ載せ、構造変更を疑う旨を注記 |
 
 調整用の環境変数: `NOTIFY_TIERS`（既定 `PRODUCT`）、`NOTIFY_FRESH_DAYS`（既定 `14`）。
 
@@ -174,13 +165,13 @@ insurance_release_fetcher/
   enricher.py        本文/PDF 取得と構造化抽出
   scorer.py          スコアリング
   analyzer.py        事実ベースのコメンタリー
-  notifier.py        新規検知と Gmail 通知
+  notifier.py        新規検知と Issue 本文の生成
   html_report.py     ダッシュボード HTML 生成
   health_checker.py  取得ヘルスチェック
   exporter.py        Excel 出力
   scrapers/          各社スクレイパー
   data/
     enrichment.json  本文から抽出した事実のキャッシュ（Actions が書き戻す）
-    seen.json        新規検知の台帳（Actions が書き戻す。消すと翌日全件が新規扱い→初回ベースラインに戻る）
+    seen.json        新規検知の台帳（Actions が書き戻す。消すと次回は初回ベースラインに戻る）
   .github/workflows/fetch_and_deploy.yml
 ```

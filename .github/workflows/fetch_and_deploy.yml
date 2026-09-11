@@ -29,8 +29,8 @@ on:
         description: '取得対象会社 (空欄=全社)'
         required: false
         default: ''
-      test_mail:
-        description: 'テストメールを送る（現在の上位3件を【テスト送信】として送信。台帳は変えない）'
+      test_notify:
+        description: 'テスト通知を起票する（現在の上位3件を【テスト】Issueとして起票。台帳は変えない）'
         type: boolean
         required: false
         default: false
@@ -45,7 +45,7 @@ permissions:
   contents: write
   pages: write
   id-token: write
-  issues: write     # 通知メールの送信失敗を Issue で知らせるため
+  issues: write     # 新規検知を Issue として起票し、GitHub の通知メールで知らせるため
 
 # スナップショット保存前に殺されると状態が壊れるため、実行中のジョブは止めない
 concurrency:
@@ -80,18 +80,9 @@ jobs:
       - name: Fetch releases and generate report
         env:
           PYTHONIOENCODING: utf-8
-          # ── 新規検知メール（Gmail） ──
-          # 秘密情報は Settings > Secrets and variables > Actions に登録したものだけを使う。
-          # 3つのうち1つでも未登録なら送信はスキップされ、処理自体は通常どおり完走する。
-          # このワークフローには pull_request トリガーが無く、またフォークからの PR には
-          # Secrets が渡らない仕様のため、PUBLIC リポジトリでも外部から読まれない。
-          SMTP_HOST: smtp.gmail.com
-          SMTP_PORT: "465"
-          SMTP_USER: ${{ secrets.SMTP_USER }}
-          SMTP_PASSWORD: ${{ secrets.SMTP_PASSWORD }}
-          MAIL_TO: ${{ secrets.MAIL_TO }}
+          # 新規検知は GitHub Issue で通知する（秘密情報は使わない）。対象は商品リリースのみ
           NOTIFY_TIERS: PRODUCT
-          TEST_MAIL: ${{ github.event.inputs.test_mail }}
+          TEST_NOTIFY: ${{ github.event.inputs.test_notify }}
         run: |
           # 手動トリガー時に会社指定がある場合
           COMPANY_ARG=""
@@ -133,29 +124,26 @@ jobs:
             echo "本日の新規検知: 0件" >> "$GITHUB_STEP_SUMMARY"
           fi
 
-      # メール送信に失敗した日は Issue にする（黙って届かない状態を作らない）
-      - name: Report notify failure
-        if: always()
+      # 新規があった日だけ Issue を起票する。GitHub が Watch しているアカウントの
+      # 登録メールへ通知メールを送る。GITHUB_TOKEN だけで完結し、秘密情報は使わない。
+      # 台帳のコミット(前のステップ)が成功してから起票する。台帳の保存に失敗した日は
+      # 起票せず、翌日あらためて同じものを検知させる（取りこぼしも二重通知も起きない）。
+      # 起票に失敗した場合はステップが失敗し、GitHub の「ワークフロー失敗」メールで気づける。
+      - name: Open issue for new releases
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          if [ -f output/notify_error.txt ]; then
-            gh label create notify-failure --color B60205 \
-              --description "新規検知メールの送信失敗" 2>/dev/null || true
-            {
-              echo "新規検知メールの送信に失敗しました。"
-              echo
-              echo '```'
-              cat output/notify_error.txt
-              echo '```'
-              echo
-              echo "Gmail のアプリパスワードが失効・削除されていないか、Secrets の SMTP_USER / SMTP_PASSWORD / MAIL_TO を確認してください。"
-              echo "送るはずだった内容は下記です。"
-              echo
-              [ -f output/notify.md ] && cat output/notify.md
-            } > issue_body.md
-            gh issue create --title "通知メール送信失敗 $(date -u '+%Y-%m-%d')" \
-              --label notify-failure --body-file issue_body.md
+          if [ -f output/notify.md ] || [ -f output/notify_test.md ]; then
+            gh label create new-release --color 0E8A16 \
+              --description "新規検知した商品リリース" 2>/dev/null || true
+          fi
+          if [ -f output/notify.md ]; then
+            gh issue create --title "$(cat output/notify_title.txt)" \
+              --label new-release --body-file output/notify.md
+          fi
+          if [ -f output/notify_test.md ]; then
+            gh issue create --title "$(cat output/notify_test_title.txt)" \
+              --label new-release --body-file output/notify_test.md
           fi
 
       - name: Prepare deploy directory
