@@ -52,6 +52,13 @@ BODY_LIMIT    = 60000 # 解析対象とする本文の最大文字数
 TIMEOUT       = 45    # product-scout の実測に合わせる（CIは手元より遅い）
 HOST_DELAY    = 1.5   # 同一ホストへの最小間隔（秒）
 
+# 抽出ルールの版。ルールを直したら上げること。
+# キャッシュには本文でなく抽出結果を保存しているため、版を上げないと
+# 直したルールがキャッシュ済みのリリースに一切反映されない。
+#   1: v4 初版
+#   2: 指定通貨を外貨扱いしない / タイトルの円建て明言を優先 / ドルの誤一致 / 提携金融機関
+EXTRACTOR_VERSION = 2
+
 # WAF ブロックページの本文マーカー（掴まされた HTML を本文として保存しないため）
 BLOCK_MARKERS = (
     "Pardon Our Interruption",
@@ -88,13 +95,16 @@ PRODUCT_KINDS: list[tuple[str, str]] = [
 
 # 通貨
 CURRENCIES: list[tuple[str, str]] = [
-    (r"米ドル|ドル建|USドル|Ｕ?Ｓ?ドル",   "米ドル"),
+    # 裸の「ドル」「ドル建」は豪ドル・NZドルにも当たるため、直前が豪/Z でないときだけ米ドルとみなす
+    (r"米ドル|米国ドル|USドル|ＵＳドル|(?<![豪ZＺ])ドル建", "米ドル"),
     (r"豪ドル|オーストラリアドル",         "豪ドル"),
     (r"ニュージーランドドル|NZドル",       "NZドル"),
     (r"ユーロ",                            "ユーロ"),
     (r"英ポンド|ポンド建",                 "英ポンド"),
     (r"円建|円貨建|円貨",                  "円"),
-    (r"指定通貨|通貨選択|複数通貨|多通貨", "通貨選択型"),
+    # 「指定通貨」は含めない。「特別養老保険（指定通貨建）」「指定通貨 円」のように、
+    # 円を指定した円建て商品の正式名称にも使われる法令用語で、外貨を意味しないため。
+    (r"通貨選択|複数通貨|多通貨|通貨を選択|通貨を選べ", "通貨選択型"),
 ]
 
 # 利率（種別 + 数値）
@@ -140,7 +150,7 @@ RATE_ROW_NEW = re.compile(rf"(?:{'|'.join(_NEW_LABELS)})[^\n]{{0,40}}?{_NUM}")
 
 # 販売チャネル
 CHANNELS: list[tuple[str, str]] = [
-    (r"銀行|信用金庫|信用組合|労働金庫|窓口販売|窓販|金融機関代理店", "銀行窓販"),
+    (r"銀行|信用金庫|信用組合|労働金庫|窓口販売|窓販|金融機関代理店|提携金融機関", "銀行窓販"),
     (r"証券会社|証券を通じ|証券株式会社",                            "証券"),
     (r"保険代理店|代理店チャネル|来店型",                            "代理店"),
     (r"営業職員|営業社員|ライフプランナー|生涯設計デザイナー|"
@@ -155,8 +165,10 @@ BANK_PATTERN = re.compile(
     r"(銀行|信用金庫|信用組合|労働金庫|信託銀行)"
 )
 # 捕捉した接頭辞から会社名だけを取り出すための削り込み
-#   「グループの株式会社りそな」→「りそな」
-BANK_PREFIX_SPLIT = re.compile(r"[のをはがと、。：:／/・\s]")
+#   「グループの株式会社りそな」→「りそな」 / 「太陽生命と益田」→「益田」
+#  助詞で切るのは直前が漢字・カタカナのときだけ。ひらがなの行名
+#  （「みなと」銀行・「はばたき」信用組合）を助詞と取り違えて壊さないため。
+BANK_PREFIX_SPLIT = re.compile(r"(?<=[一-龥ァ-ヶー々])[のをはがと]|[、。：:／/・\s]")
 BANK_PREFIX_STRIP = re.compile(r"^(株式会社|グループ|各|同|当)")
 # 誤検出しやすい一般語（「〜の銀行」等）
 BANK_STOPWORDS = {
@@ -362,12 +374,23 @@ def extract_facts(title: str, body: str) -> dict:
         facts["payment"] = "平準払"
 
     # ── 通貨 ──
-    for pat, cur in _CURR_C:
-        if pat.search(both) and cur not in facts["currencies"]:
-            facts["currencies"].append(cur)
-    facts["is_fx"] = any(
-        c in facts["currencies"] for c in ("米ドル", "豪ドル", "NZドル", "ユーロ", "英ポンド")
-    ) or "通貨選択型" in facts["currencies"]
+    #  タイトルが「円貨建」「円建」と明言し、外貨名も通貨選択も含まないなら円建て商品と確定させ、
+    #  本文の定型文言に引きずられないようにする。
+    #  明治安田「円貨建・一時払養老保険」を、正式名称の「（指定通貨建）」を理由に
+    #  外貨建てと誤表示し、そのまま通知 Issue にも載せていた（v4.2で修正）。
+    fx_names = ("米ドル", "豪ドル", "NZドル", "ユーロ", "英ポンド")
+    title_curs = [cur for pat, cur in _CURR_C if pat.search(title)]
+    if "円" in title_curs and not any(c in title_curs for c in fx_names + ("通貨選択型",)):
+        facts["currencies"] = ["円"]
+    else:
+        for pat, cur in _CURR_C:
+            if pat.search(both) and cur not in facts["currencies"]:
+                facts["currencies"].append(cur)
+    # 「指定通貨建」とだけ書かれ、通貨名が一度も出てこない文書もある（NW ロングドリームNEXT）。
+    # 外貨とは断定できないので中立の印だけ残し、外貨建フラグは立てない。
+    if not facts["currencies"] and "指定通貨" in both:
+        facts["currencies"] = ["指定通貨"]
+    facts["is_fx"] = any(c in facts["currencies"] for c in fx_names + ("通貨選択型",))
 
     facts["is_variable"] = bool(re.search(r"変額|特別勘定|指数連動", both))
 
@@ -523,7 +546,7 @@ def enrich_entries(
         url = e.get("url", "")
         hit = cache.get(url) if url else None
 
-        if hit and hit.get("facts"):
+        if hit and hit.get("facts") and hit.get("extractor_version") == EXTRACTOR_VERSION:
             facts = hit["facts"]
             stats["cached"] += 1
             e["enriched_at"] = hit.get("fetched_at", "")
@@ -544,6 +567,7 @@ def enrich_entries(
             facts = extract_facts(e.get("title", ""), body)
             if url:
                 cache[url] = {
+                    "extractor_version": EXTRACTOR_VERSION,
                     "fetched_at":  today,
                     "body_status": status,
                     "body_chars":  len(body),
