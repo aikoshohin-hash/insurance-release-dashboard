@@ -156,5 +156,32 @@ with mock.patch.dict(os.environ, env, clear=True), \
     msg = notifier.notify([new1], {"baseline": False})
     check("失敗を戻り値で返す", "失敗" in msg, msg)
 
+print("16. テスト送信は台帳に触れず、本線上位を【テスト送信】で送る")
+before = open(notifier.SEEN_PATH, encoding="utf-8").read()
+pool = [dict(new1, score=90), dict(orix2, score=80), dict(peri, score=99),
+        dict(base[0], score=70), dict(base[1], score=60)]
+with mock.patch.dict(os.environ, env, clear=True), \
+        mock.patch("smtplib.SMTP_SSL") as fake:
+    msg = notifier.send_test(pool)
+    server = fake.return_value.__enter__.return_value
+    raw = server.sendmail.call_args[0][2] if server.sendmail.called else ""
+    subj = str(make_header(decode_header(message_from_string(raw)["Subject"]))) if raw else ""
+    check("件名に【テスト送信】", subj.startswith("【テスト送信】"), subj)
+    check("本線3件（周辺は除く）", "3件" in msg, msg)
+check("台帳は変わらない", open(notifier.SEEN_PATH, encoding="utf-8").read() == before)
+with mock.patch.dict(os.environ, {}, clear=True):
+    check("Secrets 未登録なら送らない", "未登録" in notifier.send_test(pool))
+
+print("17. 失敗内容（公開Issueに載る）からアドレスを伏せる")
+import smtplib as _s
+err = _s.SMTPRecipientsRefused({"a@example.com": (550, b"no such user"),
+                                "b@example.com": (550, b"no such user")})
+with mock.patch.dict(os.environ, env, clear=True), \
+        mock.patch("smtplib.SMTP_SSL", side_effect=err):
+    notifier.notify([new1], {"baseline": False})
+text = open(os.path.join(TMP, "notify_error.txt"), encoding="utf-8").read()
+check("宛先アドレスが残らない", "@example.com" not in text, text)
+check("エラー種別は残る", "SMTPRecipientsRefused" in text, text)
+
 print(f"\n結果: {passed} passed / {failed} failed")
 sys.exit(1 if failed else 0)

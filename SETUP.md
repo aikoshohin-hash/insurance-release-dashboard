@@ -89,23 +89,39 @@ https://myaccount.google.com/apppasswords → アプリ名に `insurance-release
 https://github.com/aikoshohin-hash/insurance-release-dashboard/settings/secrets/actions
 → 「New repository secret」
 
+> **このページが 404 になる場合** — ブラウザで `aikoshohin-hash` としてログインしていません。
+> GitHub は権限の無い人が設定ページを開くと「存在しない」として 404 を返します。
+> 画面上部に「Platform / Solutions / Pricing」が並んでいたら未ログインの表示です。
+> 右上の「Sign in」→「Continue with Google」でログインしてから開き直すか、下のコマンドで登録してください。
+
 | Name | Secret に入れる値 |
 |---|---|
 | `SMTP_USER` | 送信元の Gmail アドレス |
 | `SMTP_PASSWORD` | ②の16文字（スペースは詰める） |
 | `MAIL_TO` | 宛先。複数ならカンマ区切り（`a@example.com,b@example.com`） |
 
-コマンドで登録する場合（値は対話入力になり、画面や履歴に残りません）:
+コマンドで登録する場合（この PC の gh はログイン済みなので、ブラウザのログインは不要）。
+1行ずつ実行すると `? Paste your secret` と聞かれるので値を貼り付けて Enter。値は画面にも履歴にも残りません。
+gh は PATH に入っていないためフルパスで呼びます（PowerShell の場合）:
 
-```bash
-gh secret set SMTP_USER     --repo aikoshohin-hash/insurance-release-dashboard
-gh secret set SMTP_PASSWORD --repo aikoshohin-hash/insurance-release-dashboard
-gh secret set MAIL_TO       --repo aikoshohin-hash/insurance-release-dashboard
+```powershell
+& "C:\Users\DFLDXPT\Claude code\test\gh_cli_tmp\bin\gh.exe" secret set SMTP_USER     --repo aikoshohin-hash/insurance-release-dashboard
+& "C:\Users\DFLDXPT\Claude code\test\gh_cli_tmp\bin\gh.exe" secret set SMTP_PASSWORD --repo aikoshohin-hash/insurance-release-dashboard
+& "C:\Users\DFLDXPT\Claude code\test\gh_cli_tmp\bin\gh.exe" secret set MAIL_TO       --repo aikoshohin-hash/insurance-release-dashboard
 ```
 
-**④ 動作確認**
-Actions タブ → 「Fetch & Deploy Report」→「Run workflow」。
-新規が0件の日はメールは来ません。実行サマリーに「本日の新規検知: 0件」と出ていれば正常です。
+**④ テストメールで動作確認**
+台帳に全件が既知として載っているため、普通に手動実行しても新規0件でメールは来ません。
+疎通確認は **テスト送信** で行います（台帳は変わりません）:
+
+Actions タブ → 「Fetch & Deploy Report」→「Run workflow」→ **`test_mail` にチェック** → Run。
+またはコマンドで:
+
+```powershell
+& "C:\Users\DFLDXPT\Claude code\test\gh_cli_tmp\bin\gh.exe" workflow run fetch_and_deploy.yml --repo aikoshohin-hash/insurance-release-dashboard -f test_mail=true
+```
+
+件名が「【テスト送信】【保険リリース】…」のメールが、現在の上位3件の内容で届けば成功です。
 
 ### 安全性
 

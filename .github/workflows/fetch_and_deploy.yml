@@ -29,6 +29,11 @@ on:
         description: '取得対象会社 (空欄=全社)'
         required: false
         default: ''
+      test_mail:
+        description: 'テストメールを送る（現在の上位3件を【テスト送信】として送信。台帳は変えない）'
+        type: boolean
+        required: false
+        default: false
   push:
     branches: [ main ]
     paths:
@@ -86,6 +91,7 @@ jobs:
           SMTP_PASSWORD: ${{ secrets.SMTP_PASSWORD }}
           MAIL_TO: ${{ secrets.MAIL_TO }}
           NOTIFY_TIERS: PRODUCT
+          TEST_MAIL: ${{ github.event.inputs.test_mail }}
         run: |
           # 手動トリガー時に会社指定がある場合
           COMPANY_ARG=""

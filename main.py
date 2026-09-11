@@ -29,7 +29,7 @@ from filter import filter_releases
 from enricher import enrich_entries, format_enrich_report
 from scorer import score_categorized
 from analyzer import analyze_categorized
-from notifier import detect_new, format_detect_report, notify
+from notifier import detect_new, format_detect_report, notify, send_test
 from exporter import export_categorized_excel, export_csv
 from html_report import generate_html_report
 from health_checker import check_health, format_health_report, save_health_json
@@ -211,7 +211,11 @@ def run(
         flat = [e for entries in categorized.values() for e in entries]
         new_items, detect_stats = detect_new(flat, excluded)
         print(format_detect_report(detect_stats))
-        print(f"  {notify(new_items, detect_stats)}\n")
+        print(f"  {notify(new_items, detect_stats)}")
+        # 手動実行で test_mail を指定したときだけ、配信経路の疎通確認メールを送る
+        if os.environ.get("TEST_MAIL", "").strip().lower() in ("1", "true", "yes"):
+            print(f"  {send_test(flat)}")
+        print()
 
     # 3. Excel出力 (output/ と test/ の両方)
     filepath = export_categorized_excel(categorized, enhanced=not simple_mode)

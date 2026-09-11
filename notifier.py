@@ -367,9 +367,9 @@ def smtp_config() -> dict | None:
     }
 
 
-def send_email(items: list[dict], cfg: dict) -> None:
+def send_email(items: list[dict], cfg: dict, subject_prefix: str = "") -> None:
     msg = MIMEMultipart("alternative")
-    msg["Subject"] = build_subject(items)
+    msg["Subject"] = subject_prefix + build_subject(items)
     msg["From"]    = formataddr(("保険リリース通知", cfg["from"]))
     msg["To"]      = ", ".join(cfg["to"])
     msg.attach(MIMEText(build_text(items), "plain", "utf-8"))
@@ -406,7 +406,50 @@ def notify(items: list[dict], stats: dict) -> str:
         send_email(items, cfg)
         return f"メール送信: {len(items)}件 → {len(cfg['to'])}宛先"
     except Exception as e:
-        logger.error(f"メール送信失敗: {type(e).__name__}: {e}")
-        with open(os.path.join(OUTPUT_DIR, "notify_error.txt"), "w", encoding="utf-8") as f:
-            f.write(f"{type(e).__name__}: {e}\n")
+        _record_failure(e, cfg)
         return f"メール送信失敗: {type(e).__name__}"
+
+
+def _redact(text: str, cfg: dict) -> str:
+    """エラー文から送信元・宛先のアドレスを伏せる。
+
+    失敗内容は PUBLIC リポジトリの Issue に載る。SMTPRecipientsRefused などは
+    宛先アドレスを例外文に含むため、そのまま書くとアドレスが公開されてしまう。
+    """
+    out = text
+    for addr in [cfg.get("user", ""), cfg.get("from", "")] + list(cfg.get("to", [])):
+        if addr:
+            out = out.replace(addr, "***")
+    # 念のため、残ったメールアドレス形式もすべて伏せる
+    return re.sub(r"[\w.+-]+@[\w-]+(\.[\w-]+)+", "***", out)
+
+
+def _record_failure(e: Exception, cfg: dict) -> None:
+    msg = _redact(f"{type(e).__name__}: {e}", cfg)
+    logger.error(f"メール送信失敗: {msg}")
+    os.makedirs(OUTPUT_DIR, exist_ok=True)
+    with open(os.path.join(OUTPUT_DIR, "notify_error.txt"), "w", encoding="utf-8") as f:
+        f.write(msg + "\n")
+
+
+def send_test(entries: list[dict], n: int = 3) -> str:
+    """配信経路の疎通確認。台帳には触れず、現在の本線上位 n 件を【テスト送信】として送る。
+
+    台帳に全件が既知として載っている状態では手動実行しても新規0件になり、
+    実際に Gmail から届くかを確かめる手段が無いため。
+    """
+    cfg = smtp_config()
+    if cfg is None:
+        return "テスト送信: Secrets 未登録のため送らず（SMTP_USER / SMTP_PASSWORD / MAIL_TO）"
+    sample = sorted(
+        [e for e in entries if e.get("tier") == "PRODUCT"],
+        key=lambda x: -x.get("score", 0),
+    )[:n]
+    if not sample:
+        return "テスト送信: 送る材料（本線のリリース）が0件"
+    try:
+        send_email(sample, cfg, subject_prefix="【テスト送信】")
+        return f"テスト送信: {len(sample)}件 → {len(cfg['to'])}宛先"
+    except Exception as e:
+        _record_failure(e, cfg)
+        return f"テスト送信失敗: {type(e).__name__}"
