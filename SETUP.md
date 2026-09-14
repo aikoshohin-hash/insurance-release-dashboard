@@ -96,14 +96,18 @@ Issue の本文（事実・含意・原文リンク）はメール本文にそ�
 
 1. **このリポジトリを Watch している**
    リポジトリのページ右上「Watch」が「All Activity」（または「Custom」で Issues にチェック）になっていること。
-   自分で作ったリポジトリは既定で Watch 済みです。
+   **自分で作ったリポジトリでも Watch 済みとは限りません。** 2026-09-11 に確認したところ、
+   このリポジトリも product-scout も未購読（UNSUBSCRIBED）で、そのためテスト Issue のメールが届きませんでした。
 2. **Watch の通知がメールで届く設定になっている**
    https://github.com/settings/notifications → 「Subscriptions」の **Watching** で「Email」にチェック。
 3. **送り先のメールアドレス**
    同じ画面の「Default notifications email」に表示されているアドレスに届きます。
 
-同じアカウントの `product-scout` が毎朝立てている「[scout] … 商品の棚に変化」の Issue のメールが
-届いていれば、1〜3 はすでに満たされています。
+購読状態はコマンドでも確認できます（`UNSUBSCRIBED` なら届きません）:
+
+```powershell
+& "C:\Users\DFLDXPT\Claude code\test\gh_cli_tmp\bin\gh.exe" api graphql -f query='{repository(owner:\"aikoshohin-hash\",name:\"insurance-release-dashboard\"){viewerSubscription}}'
+```
 
 ### テスト通知で動作確認
 
