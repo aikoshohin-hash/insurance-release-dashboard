@@ -2084,6 +2084,7 @@
   "body_chars": 3063,
   "body_status": "html",
   "company": "住友生命",
+  "extractor_version": 2,
   "facts": {
    "banks": [],
    "channels": [],
@@ -2102,7 +2103,7 @@
    "rates": [],
    "sale_start": ""
   },
-  "fetched_at": "2026-09-11",
+  "fetched_at": "2026-09-14",
   "title": "【住友生命デジタル共創プロジェクト】住友生命、「RNA共創コンソーシアム」に参画～RNA情報と健康増進・行動変容支援の知見を掛け合わせ、新たなウェルビーイングサービスの共創へ～"
  },
  "https://www.sumitomolife.co.jp/news/detail/newsrelease_260825.html": {
