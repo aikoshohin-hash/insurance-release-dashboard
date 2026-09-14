@@ -36,6 +36,13 @@
    "tier": "EXCLUDE",
    "title": "「お客さま本位の業務運営に関する方針」に係る取組状況について"
   },
+  "PGF生命|クレジットカード利用明細書の表示内容変更のお知らせ": {
+   "company": "PGF生命",
+   "date": "2026/05/01",
+   "first_seen": "2026-09-14",
+   "tier": "EXCLUDE",
+   "title": "クレジットカード利用明細書の表示内容変更のお知らせ"
+  },
   "PGF生命|令和8年熊本地震により被災されたお客さまへの特別なお取り扱いについて": {
    "company": "PGF生命",
    "date": "2026/07/30",
@@ -2437,6 +2444,13 @@
    "tier": "EXCLUDE",
    "title": "～健康増進活動や社会貢献活動の推進に向けた大学との取組～東海大学との健康増進プロジェクトを開始"
   },
+  "住友生命|不育症不妊症に関する検査事業等を手掛けるAOIBiosciencesに出資": {
+   "company": "住友生命",
+   "date": "2026/09/14",
+   "first_seen": "2026-09-14",
+   "tier": "EXCLUDE",
+   "title": "不育症・不妊症に関する検査事業等を手掛けるAOI Biosciencesに出資"
+  },
   "住友生命|令和8年熊本地震により被災された方々に対するお取扱い": {
    "company": "住友生命",
    "date": "2026/07/31",
@@ -2450,6 +2464,13 @@
    "first_seen": "2026-09-11",
    "tier": "EXCLUDE",
    "title": "令和８年熊本地震被災地域に対する義援金について"
+  },
+  "住友生命|仮シアフル仮": {
+   "company": "住友生命",
+   "date": "2026/09/14",
+   "first_seen": "2026-09-14",
+   "tier": "EXCLUDE",
+   "title": "仮　シアフル　仮"
   },
   "住友生命|住友生命デジタル共創プロジェクト住友生命RNA共創コンソーシアムに参画~RNA情報と健康増進行動変容支援の知見を掛け合わせ新たなウェルビーイングサービスの共創へ": {
    "baseline": true,
@@ -2494,6 +2515,13 @@
    "first_seen": "2026-09-11",
    "tier": "EXCLUDE",
    "title": "新企業CM「拡・保険」篇を放映開始～サンボマスター「輝きだして走ってく」を起用～"
+  },
+  "住友生命|日々のできごと気持ちを記録振り返るアプリへ自分らしいウェルビーイングを育むシアフルのデザイン機能を全面リニューアル~1万人の価値観データにもとづく19種類のタイ": {
+   "company": "住友生命",
+   "date": "2026/09/14",
+   "first_seen": "2026-09-14",
+   "tier": "PRODUCT",
+   "title": "日々の“できごと・気持ち”を記録・振り返るアプリへ自分らしいウェルビーイングを育む「シアフル」のデザイン・機能を全面リニューアル～１万人の価値観データにもとづく19 種類のタイプ診断も搭載～"
   },
   "住友生命|第37回創作四字熟語募集開始~感じたことを漢字に託す2026~": {
    "company": "住友生命",
@@ -3018,6 +3046,13 @@
    "first_seen": "2026-09-11",
    "tier": "EXCLUDE",
    "title": "「太陽生命ラグビー１day スクールin 宇都宮」への特別協賛"
+  },
+  "太陽生命|太陽生命ラグビー1dayスクールin岐阜への特別協賛": {
+   "company": "太陽生命",
+   "date": "2026/09/14",
+   "first_seen": "2026-09-14",
+   "tier": "EXCLUDE",
+   "title": "「太陽生命ラグビー１dayスクール in 岐阜」への特別協賛"
   },
   "太陽生命|太陽生命ラグビー1dayスクールin岐阜への特別協賛~元男子日本代表小野澤宏時さんと元女子日本代表横山里菜子さんが岐阜会場のコーチに就任~": {
    "company": "太陽生命",
@@ -8806,6 +8841,13 @@
    "tier": "EXCLUDE",
    "title": "「ＰＧＦ生命マイページ」 システムメンテナンスのお知らせ"
   },
+  "https://www.pgf-life.co.jp/hpcms/news/NB300.do?NID=2047": {
+   "company": "PGF生命",
+   "date": "2026/05/01",
+   "first_seen": "2026-09-14",
+   "tier": "EXCLUDE",
+   "title": "クレジットカード利用明細書の表示内容変更のお知らせ"
+  },
   "https://www.pgf-life.co.jp/hpcms/news/NB300.do?NID=2048": {
    "company": "PGF生命",
    "date": "2026/05/27",
@@ -9387,6 +9429,13 @@
    "tier": "EXCLUDE",
    "title": "2026年度第１四半期報告"
   },
+  "https://www.sumitomolife.co.jp/news/detail/20260911114208.html": {
+   "company": "住友生命",
+   "date": "2026/09/14",
+   "first_seen": "2026-09-14",
+   "tier": "EXCLUDE",
+   "title": "仮　シアフル　仮"
+  },
   "https://www.sumitomolife.co.jp/news/detail/newsrelease_260703.html": {
    "company": "住友生命",
    "date": "2026/07/03",
@@ -9486,6 +9535,20 @@
    "first_seen": "2026-09-11",
    "tier": "EXCLUDE",
    "title": "～健康増進活動や社会貢献活動の推進に向けた大学との取組～東海大学との健康増進プロジェクトを開始"
+  },
+  "https://www.sumitomolife.co.jp/news/detail/newsrelease_260914.html": {
+   "company": "住友生命",
+   "date": "2026/09/14",
+   "first_seen": "2026-09-14",
+   "tier": "PRODUCT",
+   "title": "日々の“できごと・気持ち”を記録・振り返るアプリへ自分らしいウェルビーイングを育む「シアフル」のデザイン・機能を全面リニューアル～１万人の価値観データにもとづく19 種類のタイプ診断も搭載～"
+  },
+  "https://www.sumitomolife.co.jp/news/detail/newsrelease_260914a.html": {
+   "company": "住友生命",
+   "date": "2026/09/14",
+   "first_seen": "2026-09-14",
+   "tier": "EXCLUDE",
+   "title": "不育症・不妊症に関する検査事業等を手掛けるAOI Biosciencesに出資"
   },
   "https://www.sumitomolife.co.jp/news/news_file/file/260731a.pdf": {
    "company": "住友生命",
@@ -10379,6 +10442,13 @@
    "first_seen": "2026-09-11",
    "tier": "EXCLUDE",
    "title": "人事異動について"
+  },
+  "https://www.taiyo-seimei.co.jp/wr2/pdf/press_article/2026/sauhdj0000000546-att/20260914_1.pdf": {
+   "company": "太陽生命",
+   "date": "2026/09/14",
+   "first_seen": "2026-09-14",
+   "tier": "EXCLUDE",
+   "title": "「太陽生命ラグビー１dayスクール in 岐阜」への特別協賛"
   },
   "https://www.tdf-life.co.jp/newsrelease/disclose2025_2/index.html": {
    "company": "T&Dフィナンシャル生命",
