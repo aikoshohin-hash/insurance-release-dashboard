@@ -1105,6 +1105,13 @@
    "tier": "EXCLUDE",
    "title": "「第74回別府大分毎日マラソン大会」への特別協賛について"
   },
+  "ソニー生命|米ドル建劣後特約付社債の発行について": {
+   "company": "ソニー生命",
+   "date": "2026/09/16",
+   "first_seen": "2026-09-16",
+   "tier": "EXCLUDE",
+   "title": "米ドル建劣後特約付社債の発行について"
+  },
   "ソニー生命|組織変更執行役員人事について": {
    "company": "ソニー生命",
    "date": "2026/08/28",
@@ -4992,6 +4999,13 @@
    "tier": "EXCLUDE",
    "title": "2025年度第3四半期報告"
   },
+  "第一生命|2026年10月1日付第一生命保険株式会社における組織改編および人事異動": {
+   "company": "第一生命",
+   "date": "2026/09/16",
+   "first_seen": "2026-09-16",
+   "tier": "EXCLUDE",
+   "title": "2026年10月1日付第一生命保険株式会社における組織改編および人事異動"
+  },
   "第一生命|2026年4月1日付第一生命保険株式会社における人事異動": {
    "company": "第一生命",
    "date": "2026/02/20",
@@ -5999,6 +6013,13 @@
    "first_seen": "2026-09-11",
    "tier": "EXCLUDE",
    "title": "今年で“サラ川”は40周年！2026年第一生命『サラっと一句！わたしの川柳コンクール』開催！"
+  },
+  "https://www.dai-ichi-life.co.jp/company/news/pdf/2026_018.pdf": {
+   "company": "第一生命",
+   "date": "2026/09/16",
+   "first_seen": "2026-09-16",
+   "tier": "EXCLUDE",
+   "title": "2026年10月1日付第一生命保険株式会社における組織改編および人事異動"
   },
   "https://www.dai-ichi-life.co.jp/company/results/kessan/2025/hanki.html": {
    "company": "第一生命",
@@ -9394,6 +9415,13 @@
    "tier": "EXCLUDE",
    "title": "不正事案の未然防止・早期発見に向けた弊社の取組進捗について（2026年8月末時点）"
   },
+  "https://www.sonylife.co.jp/company/news/2026/files/260916_bond.pdf": {
+   "company": "ソニー生命",
+   "date": "2026/09/16",
+   "first_seen": "2026-09-16",
+   "tier": "EXCLUDE",
+   "title": "米ドル建劣後特約付社債の発行について"
+  },
   "https://www.sonylife.co.jp/company/news/2026/nr_260421.html": {
    "company": "ソニー生命",
    "date": "2026/04/21",
@@ -10630,5 +10658,5 @@
   }
  },
  "created_at": "2026-09-11",
- "updated_at": "2026-09-15"
+ "updated_at": "2026-09-16"
 }
