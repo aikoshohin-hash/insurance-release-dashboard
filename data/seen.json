@@ -843,6 +843,13 @@
    "tier": "EXCLUDE",
    "title": "ソニー生命保険株式会社による既契約ブロックの出再について"
   },
+  "ソニー生命|ソニー生命堺市主催さかい学生&若者応援DAYinsummer,2026に協力": {
+   "company": "ソニー生命",
+   "date": "2026/09/16",
+   "first_seen": "2026-09-17",
+   "tier": "EXCLUDE",
+   "title": "ソニー生命、堺市主催「さかい学生＆若者応援DAY in summer,2026」に協力"
+  },
   "ソニー生命|ソニー生命学習用ICTプラットフォームLentranceの教育CSRサービスに参画": {
    "company": "ソニー生命",
    "date": "2026/03/25",
@@ -1656,6 +1663,13 @@
    "first_seen": "2026-09-11",
    "tier": "EXCLUDE",
    "title": "臨時システムメンテナンスのお知らせ"
+  },
+  "マニュライフ生命|送信元メールアドレス変更のお知らせ": {
+   "company": "マニュライフ生命",
+   "date": "2026/09/16",
+   "first_seen": "2026-09-17",
+   "tier": "EXCLUDE",
+   "title": "「送信元メールアドレス」変更のお知らせ"
   },
   "マニュライフ生命|連休期間中のお問い合わせおよびマイページご契約者さまウェブサイトの対応について": {
    "baseline": true,
@@ -2867,6 +2881,13 @@
    "tier": "EXCLUDE",
    "title": "太陽生命、『Fantasy on Ice 2026 in MAKUHARI』への特別協賛を決定！～トップスケーターによる演技と一流アーティストが奏でる音楽、唯一無二のアイスショー～"
   },
+  "太陽生命|太陽生命JAPANRUGBYCHALLENGEMATCH2026に特別協賛": {
+   "company": "太陽生命",
+   "date": "2026/09/16",
+   "first_seen": "2026-09-17",
+   "tier": "EXCLUDE",
+   "title": "「太陽生命 JAPAN RUGBY CHALLENGE MATCH 2026」に特別協賛！"
+  },
   "太陽生命|太陽生命U9ジャパンカップ2026第14回全日本小学生低学年選抜アイスホッケー大会への特別協賛": {
    "company": "太陽生命",
    "date": "2026/02/17",
@@ -3219,6 +3240,13 @@
    "first_seen": "2026-09-11",
    "tier": "EXCLUDE",
    "title": "太陽生命少子高齢社会研究所、世界アルツハイマーデーにあわせて「認知症に関する調査」を実施"
+  },
+  "太陽生命|太陽生命少子高齢社会研究所今年度も世界アルツハイマーデーにあわせて認知症に関する調査を実施": {
+   "company": "太陽生命",
+   "date": "2026/09/16",
+   "first_seen": "2026-09-17",
+   "tier": "EXCLUDE",
+   "title": "太陽生命少子高齢社会研究所、今年度も世界アルツハイマーデーにあわせて「認知症に関する調査」を実施"
   },
   "太陽生命|太陽生命少子高齢社会研究所経済産業省事業オレンジイノベーションプロジェクト参画企業に採択~認知症当事者の声を反映しお客様の元気長生きを支えます~": {
    "company": "太陽生命",
@@ -6377,6 +6405,13 @@
    "tier": "EXCLUDE",
    "title": "夏季休業中の公式ウェブサイト経由の「ご相談予約」について"
   },
+  "https://www.manulife.co.jp/ja/individual/about/newsrelease/news/2026/n20260916.html": {
+   "company": "マニュライフ生命",
+   "date": "2026/09/16",
+   "first_seen": "2026-09-17",
+   "tier": "EXCLUDE",
+   "title": "「送信元メールアドレス」変更のお知らせ"
+  },
   "https://www.manulife.co.jp/ja/policyholder/procedure/e-shishobako/use.html": {
    "baseline": true,
    "company": "マニュライフ生命",
@@ -9422,6 +9457,13 @@
    "tier": "EXCLUDE",
    "title": "米ドル建劣後特約付社債の発行について"
   },
+  "https://www.sonylife.co.jp/company/news/2026/files/260916_kyoryoku.pdf": {
+   "company": "ソニー生命",
+   "date": "2026/09/16",
+   "first_seen": "2026-09-17",
+   "tier": "EXCLUDE",
+   "title": "ソニー生命、堺市主催「さかい学生＆若者応援DAY in summer,2026」に協力"
+  },
   "https://www.sonylife.co.jp/company/news/2026/nr_260421.html": {
    "company": "ソニー生命",
    "date": "2026/04/21",
@@ -10506,6 +10548,20 @@
    "tier": "EXCLUDE",
    "title": "「太陽生命ラグビー１dayスクール in 岐阜」への特別協賛"
   },
+  "https://www.taiyo-seimei.co.jp/wr2/pdf/press_article/2026/sauhdj000000056q-att/20260916_1.pdf": {
+   "company": "太陽生命",
+   "date": "2026/09/16",
+   "first_seen": "2026-09-17",
+   "tier": "EXCLUDE",
+   "title": "「太陽生命 JAPAN RUGBY CHALLENGE MATCH 2026」に特別協賛！"
+  },
+  "https://www.taiyo-seimei.co.jp/wr2/pdf/press_article/2026/sauhdj0000000574-att/20260916_2.pdf": {
+   "company": "太陽生命",
+   "date": "2026/09/16",
+   "first_seen": "2026-09-17",
+   "tier": "EXCLUDE",
+   "title": "太陽生命少子高齢社会研究所、今年度も世界アルツハイマーデーにあわせて「認知症に関する調査」を実施"
+  },
   "https://www.tdf-life.co.jp/newsrelease/disclose2025_2/index.html": {
    "company": "T&Dフィナンシャル生命",
    "date": "2025/11/14",
@@ -10658,5 +10714,5 @@
   }
  },
  "created_at": "2026-09-11",
- "updated_at": "2026-09-16"
+ "updated_at": "2026-09-17"
 }
