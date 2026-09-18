@@ -36,6 +36,13 @@
    "tier": "EXCLUDE",
    "title": "「お客さま本位の業務運営に関する方針」に係る取組状況について"
   },
+  "PGF生命|ご契約内容のお知らせおよび生命保険料控除証明書の発送について": {
+   "company": "PGF生命",
+   "date": "2026/09/18",
+   "first_seen": "2026-09-18",
+   "tier": "EXCLUDE",
+   "title": "「ご契約内容のお知らせ」および「生命保険料控除証明書」の発送について"
+  },
   "PGF生命|クレジットカード利用明細書の表示内容変更のお知らせ": {
    "company": "PGF生命",
    "date": "2026/05/01",
@@ -2572,6 +2579,13 @@
    "tier": "EXCLUDE",
    "title": "資産形成×健康増進の新たな価値提供の拡がり「ドルつみ Vitality」販売件数10万件突破"
   },
+  "住友生命|障がいのある学生へのキャリア形成支援プログラムを実施~シンガポールで培った知見を活かし企業との共創を通じた実践的な学びを提供~": {
+   "company": "住友生命",
+   "date": "2026/09/17",
+   "first_seen": "2026-09-18",
+   "tier": "EXCLUDE",
+   "title": "障がいのある学生へのキャリア形成支援プログラムを実施～シンガポールで培った知見を活かし、企業との共創を通じた実践的な学びを提供～"
+  },
   "大樹生命|2025年度決算について": {
    "company": "大樹生命",
    "date": "2026/05/26",
@@ -3875,6 +3889,13 @@
    "tier": "EXCLUDE",
    "title": "ニッセイ・ライフプラザ釧路の店舗移転について"
   },
+  "日本生命|ニッセイライフプラザ長野の店舗フロア移転について": {
+   "company": "日本生命",
+   "date": "2026/09/18",
+   "first_seen": "2026-09-18",
+   "tier": "EXCLUDE",
+   "title": "ニッセイ・ライフプラザ長野の店舗フロア移転について"
+  },
   "日本生命|ニッセイ医療費白書の提供開始について": {
    "company": "日本生命",
    "date": "2025/12/19",
@@ -4722,6 +4743,13 @@
    "first_seen": "2026-09-11",
    "tier": "EXCLUDE",
    "title": "「ふれあいコンサート2026」を開催!～障がいのあるこどもたちに「生の音楽」を～"
+  },
+  "明治安田生命|イオンモール津田沼Southイベントスペースに協賛ハチステSupportedby明治安田としてオープン": {
+   "company": "明治安田生命",
+   "date": "2026/09/17",
+   "first_seen": "2026-09-18",
+   "tier": "EXCLUDE",
+   "title": "「イオンモール津田沼South」イベントスペースに協賛「ハチステ Supported by 明治安田」としてオープン"
   },
   "明治安田生命|グローバルアライアンスリアルティ株式会社の株式取得にかかる株式譲渡契約締結について": {
    "company": "明治安田生命",
@@ -6759,6 +6787,13 @@
    "tier": "EXCLUDE",
    "title": "「Ｍリーグ2026-27シーズン」にトップスポンサーとして協賛"
   },
+  "https://www.meijiyasuda.co.jp/profile/news/release/2026/pdf/20260917_01.pdf": {
+   "company": "明治安田生命",
+   "date": "2026/09/17",
+   "first_seen": "2026-09-18",
+   "tier": "EXCLUDE",
+   "title": "「イオンモール津田沼South」イベントスペースに協賛「ハチステ Supported by 明治安田」としてオープン"
+  },
   "https://www.meijiyasuda.co.jp/profile/news/topics/20250925.html": {
    "baseline": true,
    "company": "明治安田生命",
@@ -8627,6 +8662,13 @@
    "tier": "EXCLUDE",
    "title": "ニッセイ・ライフプラザ船橋の店舗フロア移転について"
   },
+  "https://www.nissay.co.jp/sites/default/files/assets/topics/files/20260918.pdf": {
+   "company": "日本生命",
+   "date": "2026/09/18",
+   "first_seen": "2026-09-18",
+   "tier": "EXCLUDE",
+   "title": "ニッセイ・ライフプラザ長野の店舗フロア移転について"
+  },
   "https://www.nissay.co.jp/sustainability/contents/shisan_unyou/ssc/": {
    "company": "日本生命",
    "date": "2026/08/25",
@@ -8988,6 +9030,13 @@
    "first_seen": "2026-09-11",
    "tier": "EXCLUDE",
    "title": "2026年度第1四半期業績のお知らせ"
+  },
+  "https://www.pgf-life.co.jp/hpcms/news/NB300.do?NID=2061": {
+   "company": "PGF生命",
+   "date": "2026/09/18",
+   "first_seen": "2026-09-18",
+   "tier": "EXCLUDE",
+   "title": "「ご契約内容のお知らせ」および「生命保険料控除証明書」の発送について"
   },
   "https://www.sonylife.co.jp/company/news/2025/files/250917_radio.pdf": {
    "baseline": true,
@@ -9647,6 +9696,13 @@
    "first_seen": "2026-09-14",
    "tier": "EXCLUDE",
    "title": "不育症・不妊症に関する検査事業等を手掛けるAOI Biosciencesに出資"
+  },
+  "https://www.sumitomolife.co.jp/news/detail/newsrelease_260917.html": {
+   "company": "住友生命",
+   "date": "2026/09/17",
+   "first_seen": "2026-09-18",
+   "tier": "EXCLUDE",
+   "title": "障がいのある学生へのキャリア形成支援プログラムを実施～シンガポールで培った知見を活かし、企業との共創を通じた実践的な学びを提供～"
   },
   "https://www.sumitomolife.co.jp/news/news_file/file/260731a.pdf": {
    "company": "住友生命",
@@ -10714,5 +10770,5 @@
   }
  },
  "created_at": "2026-09-11",
- "updated_at": "2026-09-17"
+ "updated_at": "2026-09-18"
 }
