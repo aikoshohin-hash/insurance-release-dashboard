@@ -284,6 +284,13 @@
    "tier": "EXCLUDE",
    "title": "「かんぽ生命 - アフラック Acceleration Program 2026」の共催について"
   },
+  "アフラック生命|かんぽ生命アフラックAccelerationProgram2026採択企業の発表": {
+   "company": "アフラック生命",
+   "date": "2026/09/18",
+   "first_seen": "2026-09-19",
+   "tier": "EXCLUDE",
+   "title": "「かんぽ生命 - アフラック Acceleration Program 2026」採択企業の発表"
+  },
   "アフラック生命|がんになっても安心して働ける社会へWorkCAN’sがんアワード2026を開催~企業団体によるがん治療と仕事の両立支援の取り組みを全国から募集~": {
    "company": "アフラック生命",
    "date": "2026/08/07",
@@ -798,6 +805,13 @@
    "first_seen": "2026-09-11",
    "tier": "EXCLUDE",
    "title": "ソニー生命、NTTドコモビジネスX NPS®ベンチマーク調査2026「生命保険部門 請求体験調査」3年連続で第1位を受賞"
+  },
+  "ソニー生命|ソニー生命と株式会社カルビンが外部プロ人材活用サービスの紹介に関する業務提携を開始": {
+   "company": "ソニー生命",
+   "date": "2026/09/18",
+   "first_seen": "2026-09-19",
+   "tier": "PERIPHERAL",
+   "title": "ソニー生命と株式会社カルビンが 「外部プロ人材活用サービス」の紹介に関する業務提携を開始"
   },
   "ソニー生命|ソニー生命と経営承継支援が業務提携強化に向けて基本合意": {
    "baseline": true,
@@ -4908,6 +4922,13 @@
    "tier": "EXCLUDE",
    "title": "明治安田名古屋駅前ビル落成のお知らせ～名駅エリアに新たな次世代ワークプレイスが誕生～"
   },
+  "明治安田生命|明治安田新企業イメージCMきっとシリーズ3篇の放映開始": {
+   "company": "明治安田生命",
+   "date": "2026/09/18",
+   "first_seen": "2026-09-19",
+   "tier": "EXCLUDE",
+   "title": "明治安田 新企業イメージCM「きっと！」シリーズ(3篇)の放映開始!"
+  },
   "明治安田生命|明治安田新作CMサザエさん人生100年時代篇の放映開始": {
    "company": "明治安田生命",
    "date": "2026/08/21",
@@ -5727,6 +5748,13 @@
    "first_seen": "2026-09-11",
    "tier": "EXCLUDE",
    "title": "アフラックスクエアが、「LEED認証 プラチナレベル」と｢DBJ Green Building認証 5つ星」を取得"
+  },
+  "https://www.aflac.co.jp/static/corp/profile/news/2026/20260918.pdf": {
+   "company": "アフラック生命",
+   "date": "2026/09/18",
+   "first_seen": "2026-09-19",
+   "tier": "EXCLUDE",
+   "title": "「かんぽ生命 - アフラック Acceleration Program 2026」採択企業の発表"
   },
   "https://www.dai-ichi-life-hd.com/newsroom/newsrelease/2025/pdf/index_059.pdf": {
    "company": "第一生命",
@@ -6793,6 +6821,13 @@
    "first_seen": "2026-09-18",
    "tier": "EXCLUDE",
    "title": "「イオンモール津田沼South」イベントスペースに協賛「ハチステ Supported by 明治安田」としてオープン"
+  },
+  "https://www.meijiyasuda.co.jp/profile/news/release/2026/pdf/20260918_01.pdf": {
+   "company": "明治安田生命",
+   "date": "2026/09/18",
+   "first_seen": "2026-09-19",
+   "tier": "EXCLUDE",
+   "title": "明治安田 新企業イメージCM「きっと！」シリーズ(3篇)の放映開始!"
   },
   "https://www.meijiyasuda.co.jp/profile/news/topics/20250925.html": {
    "baseline": true,
@@ -9513,6 +9548,13 @@
    "tier": "EXCLUDE",
    "title": "ソニー生命、堺市主催「さかい学生＆若者応援DAY in summer,2026」に協力"
   },
+  "https://www.sonylife.co.jp/company/news/2026/files/260918_teikei.pdf": {
+   "company": "ソニー生命",
+   "date": "2026/09/18",
+   "first_seen": "2026-09-19",
+   "tier": "PERIPHERAL",
+   "title": "ソニー生命と株式会社カルビンが 「外部プロ人材活用サービス」の紹介に関する業務提携を開始"
+  },
   "https://www.sonylife.co.jp/company/news/2026/nr_260421.html": {
    "company": "ソニー生命",
    "date": "2026/04/21",
@@ -10770,5 +10812,5 @@
   }
  },
  "created_at": "2026-09-11",
- "updated_at": "2026-09-18"
+ "updated_at": "2026-09-19"
 }

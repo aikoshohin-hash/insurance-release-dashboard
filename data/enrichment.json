@@ -2080,6 +2080,34 @@
   "fetched_at": "2026-09-14",
   "title": "「学資保険（無配当）」の保険料率等の改定について"
  },
+ "https://www.sonylife.co.jp/company/news/2026/files/260918_teikei.pdf": {
+  "body_chars": 1390,
+  "body_status": "pdf",
+  "company": "ソニー生命",
+  "extractor_version": 2,
+  "facts": {
+   "banks": [],
+   "channels": [
+    "営業職員"
+   ],
+   "currencies": [],
+   "excerpts": [],
+   "is_bank_channel": false,
+   "is_fx": false,
+   "is_single_premium": false,
+   "is_variable": false,
+   "payment": "",
+   "product_kind": "",
+   "product_names": [
+    "外部プロ人材活用サービス"
+   ],
+   "rate_change": null,
+   "rates": [],
+   "sale_start": ""
+  },
+  "fetched_at": "2026-09-19",
+  "title": "ソニー生命と株式会社カルビンが 「外部プロ人材活用サービス」の紹介に関する業務提携を開始"
+ },
  "https://www.sumitomolife.co.jp/news/detail/newsrelease_260721.html": {
   "body_chars": 3063,
   "body_status": "html",
