@@ -7,6 +7,13 @@
    "tier": "EXCLUDE",
    "title": "2026年度第1四半期業績のお知らせ"
   },
+  "PGF生命|PGF生命ホームページシステムメンテナンスに伴う一部機能停止のお知らせ": {
+   "company": "PGF生命",
+   "date": "2026/09/24",
+   "first_seen": "2026-09-24",
+   "tier": "EXCLUDE",
+   "title": "ＰＧＦ生命ホームページ　システムメンテナンスに伴う一部機能停止のお知らせ"
+  },
   "PGF生命|PGF生命マイページ:セキュリティ強化のお知らせパスワードの再設定をお願いします": {
    "baseline": true,
    "company": "PGF生命",
@@ -9073,6 +9080,13 @@
    "tier": "EXCLUDE",
    "title": "「ご契約内容のお知らせ」および「生命保険料控除証明書」の発送について"
   },
+  "https://www.pgf-life.co.jp/hpcms/news/NB300.do?NID=2063": {
+   "company": "PGF生命",
+   "date": "2026/09/24",
+   "first_seen": "2026-09-24",
+   "tier": "EXCLUDE",
+   "title": "ＰＧＦ生命ホームページ　システムメンテナンスに伴う一部機能停止のお知らせ"
+  },
   "https://www.sonylife.co.jp/company/news/2025/files/250917_radio.pdf": {
    "baseline": true,
    "company": "ソニー生命",
@@ -10812,5 +10826,5 @@
   }
  },
  "created_at": "2026-09-11",
- "updated_at": "2026-09-23"
+ "updated_at": "2026-09-24"
 }
