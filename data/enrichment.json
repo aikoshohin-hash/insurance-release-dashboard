@@ -2212,6 +2212,41 @@
   "fetched_at": "2026-09-14",
   "title": "マイナンバーカードを活用した新サービス「大樹らくらく手続きナビ」の開始について"
  },
+ "https://www.taiju-life.co.jp/corporate/news/pdf/20260924_1.pdf": {
+  "body_chars": 2317,
+  "body_status": "pdf",
+  "company": "大樹生命",
+  "extractor_version": 2,
+  "facts": {
+   "banks": [],
+   "channels": [],
+   "currencies": [
+    "円"
+   ],
+   "excerpts": [
+    "     ※満期時返戻率は生存給付金を満期まで全てすえ置いた場合の数値(すえ置き利率:年0.30%)です。  なお、この利率は、金利水準等"
+   ],
+   "is_bank_channel": false,
+   "is_fx": false,
+   "is_single_premium": true,
+   "is_variable": false,
+   "payment": "一時払",
+   "product_kind": "一時払養老",
+   "product_names": [
+    "楓ロード"
+   ],
+   "rate_change": null,
+   "rates": [
+    {
+     "kind": "利率",
+     "value": 0.3
+    }
+   ],
+   "sale_start": ""
+  },
+  "fetched_at": "2026-09-25",
+  "title": "～円建の一時払養老保険～「楓ロード」の発売について"
+ },
  "https://www.taiyo-seimei.co.jp/wr2/pdf/press_article/2025/c1lqbg00000015qp-att/20250930_1.pdf": {
   "body_chars": 1122,
   "body_status": "pdf",

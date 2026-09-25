@@ -2493,6 +2493,13 @@
    "tier": "EXCLUDE",
    "title": "～健康増進活動や社会貢献活動の推進に向けた大学との取組～東海大学との健康増進プロジェクトを開始"
   },
+  "住友生命|バナナマン設楽統さん×生田絵梨花さん出演の新CM踊っているだけの生田篇救Q隊Cube篇を放映開始": {
+   "company": "住友生命",
+   "date": "2026/09/24",
+   "first_seen": "2026-09-25",
+   "tier": "EXCLUDE",
+   "title": "バナナマン設楽統さん×生田絵梨花さん出演の新CM「踊っているだけの生田」篇・「救Ｑ隊Ｃｕｂｅ」篇を放映開始"
+  },
   "住友生命|不育症不妊症に関する検査事業等を手掛けるAOIBiosciencesに出資": {
    "company": "住友生命",
    "date": "2026/09/14",
@@ -2648,6 +2655,13 @@
    "first_seen": "2026-09-11",
    "tier": "EXCLUDE",
    "title": "HDI格付け 最高ランク『三つ星』評価を獲得～「問合せ窓口」は13年連続、「Webサポート」は5年連続6度目～"
+  },
+  "大樹生命|~円建の一時払養老保険~楓ロードの発売について": {
+   "company": "大樹生命",
+   "date": "2026/09/24",
+   "first_seen": "2026-09-25",
+   "tier": "PRODUCT",
+   "title": "～円建の一時払養老保険～「楓ロード」の発売について"
   },
   "大樹生命|お客さま本位の業務運営に関する2025年度取組状況について": {
    "company": "大樹生命",
@@ -5140,6 +5154,13 @@
    "tier": "EXCLUDE",
    "title": "JR関内駅前 大規模ミクストユース型プロジェクト「BASEGATE横浜関内」2026年3月19日グランドオープン入居テナント55店舗の詳細と小割飲食ゾーンの名称を発表"
   },
+  "第一生命|PRIAwards2026アセットオーナーカテゴリー特別賞を受賞自然生物多様性に関する取組みが評価日本のPRI署名機関として初受賞": {
+   "company": "第一生命",
+   "date": "2026/09/24",
+   "first_seen": "2026-09-25",
+   "tier": "EXCLUDE",
+   "title": "PRI Awards 2026 アセットオーナーカテゴリー特別賞を受賞自然・生物多様性に関する取組みが評価、日本のPRI署名機関として初受賞"
+  },
   "第一生命|QOLism導入企業向けにプレゼンティーイズム対策パッケージの提供を開始―可視化から実行支援まで一体的にサポートし健康経営の実効性向上に貢献―": {
    "baseline": true,
    "company": "第一生命",
@@ -6111,6 +6132,13 @@
    "first_seen": "2026-09-16",
    "tier": "EXCLUDE",
    "title": "2026年10月1日付第一生命保険株式会社における組織改編および人事異動"
+  },
+  "https://www.dai-ichi-life.co.jp/company/news/pdf/2026_019.pdf": {
+   "company": "第一生命",
+   "date": "2026/09/24",
+   "first_seen": "2026-09-25",
+   "tier": "EXCLUDE",
+   "title": "PRI Awards 2026 アセットオーナーカテゴリー特別賞を受賞自然・生物多様性に関する取組みが評価、日本のPRI署名機関として初受賞"
   },
   "https://www.dai-ichi-life.co.jp/company/results/kessan/2025/hanki.html": {
    "company": "第一生命",
@@ -9781,6 +9809,13 @@
    "tier": "EXCLUDE",
    "title": "新企業CM「拡・保険」篇を放映開始～サンボマスター「輝きだして走ってく」を起用～"
   },
+  "https://www.sumitomolife.co.jp/news/news_file/file/260924.pdf": {
+   "company": "住友生命",
+   "date": "2026/09/24",
+   "first_seen": "2026-09-25",
+   "tier": "EXCLUDE",
+   "title": "バナナマン設楽統さん×生田絵梨花さん出演の新CM「踊っているだけの生田」篇・「救Ｑ隊Ｃｕｂｅ」篇を放映開始"
+  },
   "https://www.taiju-life.co.jp/corporate/ir/settlement.htm": {
    "company": "大樹生命",
    "date": "2026/05/26",
@@ -9921,6 +9956,13 @@
    "first_seen": "2026-09-11",
    "tier": "EXCLUDE",
    "title": "「すみっコぐらし」とのスペシャルコラボレーションを実施"
+  },
+  "https://www.taiju-life.co.jp/corporate/news/pdf/20260924_1.pdf": {
+   "company": "大樹生命",
+   "date": "2026/09/24",
+   "first_seen": "2026-09-25",
+   "tier": "PRODUCT",
+   "title": "～円建の一時払養老保険～「楓ロード」の発売について"
   },
   "https://www.taiyo-seimei.co.jp/wr2/pdf/press_article/2025/c1lqbg00000015gh-att/20250911_1.pdf": {
    "company": "太陽生命",
@@ -10826,5 +10868,5 @@
   }
  },
  "created_at": "2026-09-11",
- "updated_at": "2026-09-24"
+ "updated_at": "2026-09-25"
 }
