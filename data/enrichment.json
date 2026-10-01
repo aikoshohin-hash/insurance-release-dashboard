@@ -2735,6 +2735,69 @@
   "fetched_at": "2026-09-14",
   "title": "太陽生命と新潟縣信用組合、生命保険の共同募集を開始"
  },
+ "https://www.taiyo-seimei.co.jp/wr2/pdf/press_article/2026/qtu4qu000000002q-att/20260930_1.pdf": {
+  "body_chars": 1223,
+  "body_status": "pdf",
+  "company": "太陽生命",
+  "extractor_version": 2,
+  "facts": {
+   "banks": [
+    "青森みちのく銀行",
+    "群馬県信用組合"
+   ],
+   "channels": [
+    "銀行窓販"
+   ],
+   "currencies": [
+    "円"
+   ],
+   "excerpts": [],
+   "is_bank_channel": true,
+   "is_fx": false,
+   "is_single_premium": true,
+   "is_variable": false,
+   "payment": "一時払",
+   "product_kind": "一時払終身",
+   "product_names": [
+    "長生きＭｙ介護"
+   ],
+   "rate_change": null,
+   "rates": [],
+   "sale_start": ""
+  },
+  "fetched_at": "2026-10-01",
+  "title": "太陽生命、金融機関代理店を通じ『長生きＭｙ介護』の販売を開始_"
+ },
+ "https://www.taiyo-seimei.co.jp/wr2/pdf/press_article/2026/qtu4qu0000000034-att/20260930_2.pdf": {
+  "body_chars": 1238,
+  "body_status": "pdf",
+  "company": "太陽生命",
+  "extractor_version": 2,
+  "facts": {
+   "banks": [
+    "埼玉信用組合",
+    "地域にとってなくてはならない信用組合"
+   ],
+   "channels": [
+    "銀行窓販",
+    "営業職員"
+   ],
+   "currencies": [],
+   "excerpts": [],
+   "is_bank_channel": true,
+   "is_fx": false,
+   "is_single_premium": false,
+   "is_variable": false,
+   "payment": "",
+   "product_kind": "学資保険",
+   "product_names": [],
+   "rate_change": null,
+   "rates": [],
+   "sale_start": ""
+  },
+  "fetched_at": "2026-10-01",
+  "title": "太陽生命と埼玉信用組合、生命保険の共同募集を開始"
+ },
  "https://www.taiyo-seimei.co.jp/wr2/pdf/press_article/2026/sauhdj00000001us-att/20260415_1.pdf": {
   "body_chars": 1471,
   "body_status": "pdf",
