@@ -1860,6 +1860,36 @@
   "fetched_at": "2026-09-14",
   "title": "みずほ銀行を通じ、『みらいの恵み』を販売開始"
  },
+ "https://www.nw-life.co.jp/news/release/pdf/n261001.pdf": {
+  "body_chars": 1617,
+  "body_status": "pdf",
+  "company": "ニッセイ・ウェルス生命",
+  "extractor_version": 2,
+  "facts": {
+   "banks": [],
+   "channels": [
+    "証券"
+   ],
+   "currencies": [
+    "指定通貨"
+   ],
+   "excerpts": [],
+   "is_bank_channel": false,
+   "is_fx": false,
+   "is_single_premium": true,
+   "is_variable": false,
+   "payment": "一時払",
+   "product_kind": "終身保険",
+   "product_names": [
+    "ロングドリームNEXT"
+   ],
+   "rate_change": null,
+   "rates": [],
+   "sale_start": ""
+  },
+  "fetched_at": "2026-10-02",
+  "title": "みずほ証券を通じ、『ロングドリームNEXT』を販売開始"
+ },
  "https://www.orixlife.co.jp/about/news/2025/pdf/n251008.pdf": {
   "body_chars": 3382,
   "body_status": "pdf",
