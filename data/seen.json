@@ -1239,6 +1239,13 @@
    "tier": "PERIPHERAL",
    "title": "2025年　生命保険料控除証明書（再発行・電子交付）に関してはこちら"
   },
+  "ニッセイ・ウェルス生命|2026年の生命保険料控除証明書の発送について": {
+   "company": "ニッセイ・ウェルス生命",
+   "date": "2026/10/05",
+   "first_seen": "2026-10-05",
+   "tier": "EXCLUDE",
+   "title": "2026年の生命保険料控除証明書の発送について"
+  },
   "ニッセイ・ウェルス生命|2026年度第1四半期報告について": {
    "company": "ニッセイ・ウェルス生命",
    "date": "2026/08/06",
@@ -1289,6 +1296,13 @@
    "first_seen": "2026-09-11",
    "tier": "EXCLUDE",
    "title": "人事異動に関するお知らせ"
+  },
+  "ニッセイ・ウェルス生命|令和8年2026年生命保険料控除制度改正のお知らせ": {
+   "company": "ニッセイ・ウェルス生命",
+   "date": "2026/10/05",
+   "first_seen": "2026-10-05",
+   "tier": "EXCLUDE",
+   "title": "令和8年（2026年）生命保険料控除制度改正のお知らせ"
   },
   "ニッセイ・ウェルス生命|令和8年熊本地震により被害を受けられた皆さまへ": {
    "company": "ニッセイ・ウェルス生命",
@@ -1648,6 +1662,13 @@
    "first_seen": "2026-09-11",
    "tier": "EXCLUDE",
    "title": "【復旧】弊社コールセンターの運営状況について"
+  },
+  "マニュライフ生命|新ブランドキャンペーン開始#お金のはなしをオープンに望む未来を考え長い人生に向けた経済的な備えを後押し": {
+   "company": "マニュライフ生命",
+   "date": "2026/10/05",
+   "first_seen": "2026-10-05",
+   "tier": "EXCLUDE",
+   "title": "新ブランドキャンペーン 開始「＃お金のはなしをオープンに」-望む未来を考え、長い人生に向けた経済的な備えを後押し-"
   },
   "マニュライフ生命|新商品こだわり変額保険v2を11月1日から販売開始": {
    "baseline": true,
@@ -2999,6 +3020,13 @@
    "first_seen": "2026-09-11",
    "tier": "EXCLUDE",
    "title": "太陽生命、10年連続で「健康経営優良法人（ホワイト500）」に認定！"
+  },
+  "太陽生命|太陽生命2027IIHF女子アジア選手権へ協賛": {
+   "company": "太陽生命",
+   "date": "2026/10/05",
+   "first_seen": "2026-10-05",
+   "tier": "EXCLUDE",
+   "title": "太陽生命、「2027IIHF女子アジア選手権」へ協賛"
   },
   "太陽生命|太陽生命FantasyonIce2026inMAKUHARIへの特別協賛を決定~トップスケーターによる演技と一流アーティストが奏でる音楽唯一無二のアイスショー~": {
    "company": "太陽生命",
@@ -6593,6 +6621,13 @@
    "tier": "PERIPHERAL",
    "title": "マニュライフ、マイクロソフトとの提携を拡大し、エンタープライズAIのガバナンスとイノベーションを加速"
   },
+  "https://www.manulife.co.jp/content/dam/insurance/jp/documents/press/2026/1005.pdf": {
+   "company": "マニュライフ生命",
+   "date": "2026/10/05",
+   "first_seen": "2026-10-05",
+   "tier": "EXCLUDE",
+   "title": "新ブランドキャンペーン 開始「＃お金のはなしをオープンに」-望む未来を考え、長い人生に向けた経済的な備えを後押し-"
+  },
   "https://www.manulife.co.jp/ja/individual/about/newsrelease/news/2025/n20250926.html": {
    "company": "マニュライフ生命",
    "date": "2025/09/26",
@@ -9084,6 +9119,13 @@
    "tier": "PERIPHERAL",
    "title": "2025年　生命保険料控除証明書（再発行・電子交付）に関してはこちら"
   },
+  "https://www.nw-life.co.jp/news/i261005_2.pdf": {
+   "company": "ニッセイ・ウェルス生命",
+   "date": "2026/10/05",
+   "first_seen": "2026-10-05",
+   "tier": "EXCLUDE",
+   "title": "令和8年（2026年）生命保険料控除制度改正のお知らせ"
+  },
   "https://www.nw-life.co.jp/news/info/8.html": {
    "company": "ニッセイ・ウェルス生命",
    "date": "2026/07/29",
@@ -9119,6 +9161,13 @@
    "first_seen": "2026-09-11",
    "tier": "EXCLUDE",
    "title": "支払漏れ等が判明し、追加でお支払した保険金等の件数・金額（2025年度）"
+  },
+  "https://www.nw-life.co.jp/news/info/i261005_1.html": {
+   "company": "ニッセイ・ウェルス生命",
+   "date": "2026/10/05",
+   "first_seen": "2026-10-05",
+   "tier": "EXCLUDE",
+   "title": "2026年の生命保険料控除証明書の発送について"
   },
   "https://www.nw-life.co.jp/news/info/pdf/i260130.pdf": {
    "baseline": true,
@@ -10705,6 +10754,13 @@
    "tier": "EXCLUDE",
    "title": "太陽生命、「北海道電力株式会社」への「太陽生命グリーンローン」の実施"
   },
+  "https://www.taiyo-seimei.co.jp/wr2/pdf/press_article/2026/qtu4qu0000000081-att/20261005_1.pdf": {
+   "company": "太陽生命",
+   "date": "2026/10/05",
+   "first_seen": "2026-10-05",
+   "tier": "EXCLUDE",
+   "title": "太陽生命、「2027IIHF女子アジア選手権」へ協賛"
+  },
   "https://www.taiyo-seimei.co.jp/wr2/pdf/press_article/2026/qtu4qu00000000c1-att/20261001_1.pdf": {
    "company": "太陽生命",
    "date": "2026/10/01",
@@ -11190,5 +11246,5 @@
   }
  },
  "created_at": "2026-09-11",
- "updated_at": "2026-10-04"
+ "updated_at": "2026-10-05"
 }
