@@ -1706,6 +1706,36 @@
   "fetched_at": "2026-09-14",
   "title": "「平準払個人年金（外貨建）」2025年の生命保険料控除証明書の電子交付・再発行サービス開始について"
  },
+ "https://www.nw-life.co.jp/news/info/i261006.html": {
+  "body_chars": 2534,
+  "body_status": "html",
+  "company": "ニッセイ・ウェルス生命",
+  "extractor_version": 2,
+  "facts": {
+   "banks": [],
+   "channels": [],
+   "currencies": [
+    "米ドル",
+    "豪ドル",
+    "円"
+   ],
+   "excerpts": [],
+   "is_bank_channel": false,
+   "is_fx": true,
+   "is_single_premium": true,
+   "is_variable": true,
+   "payment": "一時払",
+   "product_kind": "定額年金",
+   "product_names": [
+    "平準払個人年金（外貨建）"
+   ],
+   "rate_change": null,
+   "rates": [],
+   "sale_start": ""
+  },
+  "fetched_at": "2026-10-06",
+  "title": "「平準払個人年金（外貨建）」2026年の生命保険料控除証明書の電子交付・再発行サービス開始について"
+ },
  "https://www.nw-life.co.jp/news/info/pdf/i260130.pdf": {
   "body_chars": 486,
   "body_status": "pdf",
@@ -3017,5 +3047,38 @@
   },
   "fetched_at": "2026-09-14",
   "title": "商品改定　ラインナップを増やしリニューアル！『ハイブリッド あんしん ライフ２プラス』"
+ },
+ "https://www.tdf-life.co.jp/newsrelease/pdf/20261005.pdf": {
+  "body_chars": 3264,
+  "body_status": "pdf",
+  "company": "T&Dフィナンシャル生命",
+  "extractor_version": 2,
+  "facts": {
+   "banks": [
+    "所属銀行",
+    "大和ネクスト銀行"
+   ],
+   "channels": [
+    "銀行窓販",
+    "証券",
+    "代理店"
+   ],
+   "currencies": [],
+   "excerpts": [],
+   "is_bank_channel": true,
+   "is_fx": false,
+   "is_single_premium": false,
+   "is_variable": false,
+   "payment": "",
+   "product_kind": "学資保険",
+   "product_names": [
+    "コネクトのつみたて応援保険"
+   ],
+   "rate_change": null,
+   "rates": [],
+   "sale_start": ""
+  },
+  "fetched_at": "2026-10-06",
+  "title": "大和コネクト証券、資産形成の継続をサポートする新サービス「コネクトのつみたて応援保険」の提供を開始～所定の障害・介護状態や、三大疾病により所定の状態となった場合も、将来に向けたつみたて投資を支える新しい仕組み～"
  }
 }
