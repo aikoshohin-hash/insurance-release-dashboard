@@ -78,6 +78,13 @@
    "tier": "EXCLUDE",
    "title": "取締役・監査役・執行役員人事および人事異動について"
   },
+  "PGF生命|当社グループ会社による金銭不祥事等について": {
+   "company": "PGF生命",
+   "date": "2026/10/08",
+   "first_seen": "2026-10-09",
+   "tier": "EXCLUDE",
+   "title": "当社グループ会社による金銭不祥事等について"
+  },
   "PGF生命|組織の変更および人事異動について": {
    "company": "PGF生命",
    "date": "2026/05/27",
@@ -1096,6 +1103,13 @@
    "first_seen": "2026-09-11",
    "tier": "EXCLUDE",
    "title": "新経営体制について"
+  },
+  "ソニー生命|有期払込終身保険無配当の改定および一時払種目の販売再開について": {
+   "company": "ソニー生命",
+   "date": "2026/10/08",
+   "first_seen": "2026-10-09",
+   "tier": "PRODUCT",
+   "title": "「有期払込終身保険（無配当）」の改定および一時払種目の販売再開について"
   },
   "ソニー生命|東京大学IOGとの共同研究ソニー生命生きがい白書プロジェクトを開始~生きがいの実態や人生へ与える影響を探りより豊かな人生社会の実現へ~": {
    "company": "ソニー生命",
@@ -9535,6 +9549,13 @@
    "tier": "EXCLUDE",
    "title": "ＰＧＦ生命ホームページ　システムメンテナンスに伴う一部機能停止のお知らせ"
   },
+  "https://www.pgf-life.co.jp/hpcms/news/NB300.do?NID=2065": {
+   "company": "PGF生命",
+   "date": "2026/10/08",
+   "first_seen": "2026-10-09",
+   "tier": "EXCLUDE",
+   "title": "当社グループ会社による金銭不祥事等について"
+  },
   "https://www.sonylife.co.jp/company/news/2025/files/250917_radio.pdf": {
    "baseline": true,
    "company": "ソニー生命",
@@ -10016,6 +10037,13 @@
    "first_seen": "2026-09-19",
    "tier": "PERIPHERAL",
    "title": "ソニー生命と株式会社カルビンが 「外部プロ人材活用サービス」の紹介に関する業務提携を開始"
+  },
+  "https://www.sonylife.co.jp/company/news/2026/files/261008_syushin.pdf": {
+   "company": "ソニー生命",
+   "date": "2026/10/08",
+   "first_seen": "2026-10-09",
+   "tier": "PRODUCT",
+   "title": "「有期払込終身保険（無配当）」の改定および一時払種目の販売再開について"
   },
   "https://www.sonylife.co.jp/company/news/2026/nr_260421.html": {
    "company": "ソニー生命",
@@ -11372,5 +11400,5 @@
   }
  },
  "created_at": "2026-09-11",
- "updated_at": "2026-10-08"
+ "updated_at": "2026-10-09"
 }
