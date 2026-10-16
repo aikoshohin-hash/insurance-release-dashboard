@@ -4120,6 +4120,13 @@
    "tier": "EXCLUDE",
    "title": "ニッセイ・ライフプラザ天神の店舗移転について"
   },
+  "日本生命|ニッセイライフプラザ姫路の店舗フロア移転について": {
+   "company": "日本生命",
+   "date": "2026/10/16",
+   "first_seen": "2026-10-16",
+   "tier": "EXCLUDE",
+   "title": "ニッセイ・ライフプラザ姫路の店舗フロア移転について[76.5KB]"
+  },
   "日本生命|ニッセイライフプラザ松山の店舗フロア移転について": {
    "company": "日本生命",
    "date": "2026/08/24",
@@ -5272,6 +5279,13 @@
    "tier": "EXCLUDE",
    "title": "明治生命館1階・2階リニューアルオープン(展示エリア拡充、カフェ設置)のお知らせ"
   },
+  "明治安田生命|明治生命館の取組みが2026年度グッドデザイン賞を受賞重要文化財の保存と現代的活用が評価され受賞リニューアル1周年施策として非公開エリアを体験できる3Dウォーク": {
+   "company": "明治安田生命",
+   "date": "2026/10/15",
+   "first_seen": "2026-10-16",
+   "tier": "EXCLUDE",
+   "title": "明治生命館の取組みが「2026年度グッドデザイン賞」を受賞- 重要文化財の保存と現代的活用が評価され受賞 リニューアル1周年施策として非公開エリアを体験できる3D ウォークスルービューアを導入 -"
+  },
   "明治安田生命|未来共創投資からJPYC株式会社への出資について~ステーブルコインの普及を通じた各種金融サービスの利便性向上を支援~": {
    "company": "明治安田生命",
    "date": "2026/02/27",
@@ -5711,6 +5725,13 @@
    "first_seen": "2026-09-11",
    "tier": "EXCLUDE",
    "title": "「給トク払い」のサービスに団体保険が登場～企業規模を問わず、団体保険の導入機会が広がります～"
+  },
+  "第一生命|都市の緑3表彰および第一生命賞特別企画TheGardenofLifeの受賞者決定": {
+   "company": "第一生命",
+   "date": "2026/10/16",
+   "first_seen": "2026-10-16",
+   "tier": "EXCLUDE",
+   "title": "「都市の緑3表彰」および第一生命賞 特別企画『The Garden of Life』の受賞者決定"
   },
   "第一生命|都市の緑3表彰の受賞者決定および2027年国際園芸博覧会に向けた特別企画の実施について": {
    "company": "第一生命",
@@ -6468,6 +6489,13 @@
    "first_seen": "2026-10-15",
    "tier": "EXCLUDE",
    "title": "三重県が発行する『みえ南海トラフ地震災害から命をつなぐボンド』への投資～日本初の地震による被災者支援対策債への投資を通じ、南海トラフ地震への対策強化を後押し～"
+  },
+  "https://www.dai-ichi-life.co.jp/company/news/pdf/2026_021.pdf": {
+   "company": "第一生命",
+   "date": "2026/10/16",
+   "first_seen": "2026-10-16",
+   "tier": "EXCLUDE",
+   "title": "「都市の緑3表彰」および第一生命賞 特別企画『The Garden of Life』の受賞者決定"
   },
   "https://www.dai-ichi-life.co.jp/company/results/kessan/2025/hanki.html": {
    "company": "第一生命",
@@ -7227,6 +7255,13 @@
    "first_seen": "2026-10-01",
    "tier": "EXCLUDE",
    "title": "明治安田「健康」に関するアンケート調査を実施"
+  },
+  "https://www.meijiyasuda.co.jp/profile/news/release/2026/pdf/20261015_01.pdf": {
+   "company": "明治安田生命",
+   "date": "2026/10/15",
+   "first_seen": "2026-10-16",
+   "tier": "EXCLUDE",
+   "title": "明治生命館の取組みが「2026年度グッドデザイン賞」を受賞- 重要文化財の保存と現代的活用が評価され受賞 リニューアル1周年施策として非公開エリアを体験できる3D ウォークスルービューアを導入 -"
   },
   "https://www.meijiyasuda.co.jp/profile/news/topics/20250925.html": {
    "baseline": true,
@@ -9193,6 +9228,13 @@
    "first_seen": "2026-09-18",
    "tier": "EXCLUDE",
    "title": "ニッセイ・ライフプラザ長野の店舗フロア移転について"
+  },
+  "https://www.nissay.co.jp/sites/default/files/assets/topics/files/20261016.pdf": {
+   "company": "日本生命",
+   "date": "2026/10/16",
+   "first_seen": "2026-10-16",
+   "tier": "EXCLUDE",
+   "title": "ニッセイ・ライフプラザ姫路の店舗フロア移転について[76.5KB]"
   },
   "https://www.nissay.co.jp/sustainability/contents/shisan_unyou/ssc/": {
    "company": "日本生命",
@@ -11470,5 +11512,5 @@
   }
  },
  "created_at": "2026-09-11",
- "updated_at": "2026-10-15"
+ "updated_at": "2026-10-16"
 }
